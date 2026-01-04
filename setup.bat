@@ -96,15 +96,15 @@ if "%INSTALL_DEPS%"=="1" (
     echo ========================================
     echo.
     
-    REM Mise à jour de pip
+    REM Mise à jour de pip (utilise le python du venv)
     echo [1/4] Mise a jour de pip...
-    python -m pip install --upgrade pip
+    "%VENV_DIR%\\Scripts\\python.exe" -m pip install --upgrade pip
     echo.
     
     REM Installation de PyTorch avec CUDA 12.1
     echo [2/4] Installation de PyTorch avec CUDA 12.1...
     echo      ^(Cela peut prendre plusieurs minutes^)
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    "%VENV_DIR%\\Scripts\\python.exe" -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     
     if errorlevel 1 (
         echo [ERREUR] Echec de l'installation de PyTorch!
@@ -115,9 +115,9 @@ if "%INSTALL_DEPS%"=="1" (
     echo [OK] PyTorch installe
     echo.
     
-    REM Installation des autres dépendances
+    REM Installation des autres dépendances (utilise le python du venv)
     echo [3/4] Installation des autres dependances...
-    pip install -r requirements.txt
+    "%VENV_DIR%\\Scripts\\python.exe" -m pip install -r requirements.txt
     
     if errorlevel 1 (
         echo [ERREUR] Echec de l'installation des dependances!
@@ -127,9 +127,9 @@ if "%INSTALL_DEPS%"=="1" (
     echo [OK] Dependances installees
     echo.
     
-    REM Test GPU
+    REM Test GPU (utilise le python du venv)
     echo [4/4] Verification du GPU...
-    python test_gpu.py
+    "%VENV_DIR%\\Scripts\\python.exe" test_gpu.py
     
     if errorlevel 1 (
         echo.
@@ -152,7 +152,7 @@ echo.
 echo Appuyez sur F2 pour parler, ESC pour quitter.
 echo.
 
-python main.py
+"%VENV_DIR%\\Scripts\\python.exe" main.py
 
 REM Si erreur
 if errorlevel 1 (

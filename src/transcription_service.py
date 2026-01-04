@@ -90,7 +90,7 @@ class TranscriptionService:
         self,
         model_id: str = model_config.MODEL_ID,
         device: str = model_config.DEVICE,
-        compute_type: str = model_config.COMPUTE_TYPE
+        compute_type: str = "float16"
     ):
         # Convertit le model_id HuggingFace vers faster-whisper si nécessaire
         self.model_id = self.MODEL_MAPPING.get(model_id, model_id)
@@ -300,8 +300,8 @@ class TranscriptionService:
             traceback.print_exc()
             return None
         finally:
-            # Force garbage collection plus fréquemment pour économiser la RAM
-            if self._total_transcriptions % 5 == 0:
+            # Force garbage collection périodiquement
+            if self._total_transcriptions % 10 == 0:
                 gc.collect()
                 if _HAS_TORCH and torch.cuda.is_available():
                     torch.cuda.empty_cache()

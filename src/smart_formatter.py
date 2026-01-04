@@ -21,21 +21,14 @@ from typing import Callable, Optional
 sys.path.append('..')
 from config import app_config
 
-# Import lazy de transformers pour éviter de charger ~300MB RAM au démarrage
-# La variable sera initialisée lors du premier appel à is_available ou load_model
-_HAS_TRANSFORMER: bool | None = None  # None = pas encore vérifié
-
-
-def _check_transformer_available() -> bool:
-    """Vérifie si transformers est disponible (lazy check)"""
-    global _HAS_TRANSFORMER
-    if _HAS_TRANSFORMER is None:
-        try:
-            import transformers  # noqa: F401
-            _HAS_TRANSFORMER = True
-        except ImportError:
-            _HAS_TRANSFORMER = False
-    return _HAS_TRANSFORMER
+# Essaie d'importer le modèle de formatage
+_HAS_TRANSFORMER = False
+try:
+    import torch
+    from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+    _HAS_TRANSFORMER = True
+except ImportError:
+    pass
 
 
 class FormattingLevel(Enum):
@@ -110,7 +103,7 @@ class SmartFormatter:
     @property
     def is_available(self) -> bool:
         """Retourne True si le formatage IA est disponible"""
-        return _check_transformer_available()
+        return _HAS_TRANSFORMER
     
     def set_progress_callback(self, callback: Callable[[str, float], None]) -> None:
         """Définit le callback de progression"""
@@ -126,7 +119,7 @@ class SmartFormatter:
         Charge le modèle de ponctuation.
         Retourne True si chargé avec succès.
         """
-        if not _check_transformer_available():
+        if not _HAS_TRANSFORMER:
             print("⚠️ Transformers non disponible, formatage basique uniquement")
             return False
         
@@ -139,9 +132,6 @@ class SmartFormatter:
         
         try:
             self._report_progress("Chargement du modèle de formatage...", 0.2)
-            
-            # Import lazy de pipeline ici pour éviter le chargement au démarrage
-            from transformers import pipeline
             
             # Utilise le même cache que Whisper
             cache_dir = str(app_config.MODELS_DIR)

@@ -33,8 +33,7 @@ class ModelConfig:
     """Configuration du modèle Whisper"""
     MODEL_ID: str = "turbo"  # Modèle Faster-Whisper (turbo = large-v3-turbo)
     DEVICE: str = "cuda"  # Utilisation GPU
-    COMPUTE_TYPE: str = "int8"  # INT8 quantization: ~30% moins de RAM/VRAM, qualité similaire
-    # Alternatives: "float16" (meilleure précision), "int8_float16" (hybride), "float32"
+    TORCH_DTYPE: str = "float16"  # Half precision pour économiser la VRAM
     
     # Paramètres de génération
     LANGUAGE: str = "fr"  # Langue par défaut ("auto" pour détection automatique)
@@ -70,7 +69,7 @@ class UIConfig:
     WINDOW_OPACITY: float = 0.95
     
     # Intervalle de mise à jour VRAM (ms)
-    VRAM_UPDATE_INTERVAL_MS: int = 5000  # Réduit pour économiser les appels GPU
+    VRAM_UPDATE_INTERVAL_MS: int = 2000
     
     # Couleurs
     COLOR_BACKGROUND: str = "#1E1E2E"

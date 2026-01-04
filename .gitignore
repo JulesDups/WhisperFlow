@@ -92,3 +92,8 @@ logs/
 *.temp
 temp/
 tmp/
+# User settings (contains personal preferences)
+user_settings.json
+
+# Session/conversation files
+CONVERSATION_SUMMARY.md

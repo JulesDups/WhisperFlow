@@ -39,8 +39,14 @@ def check_requirements():
     except ImportError:
         missing.append("PyQt6")
     
-    # Note: PyTorch n'est plus vérifié ici pour éviter de charger ~400MB RAM au démarrage
-    # La vérification CUDA se fait lors du chargement du modèle dans TranscriptionService
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            print("⚠️  AVERTISSEMENT: CUDA n'est pas disponible!")
+            print("   La transcription sera très lente sans GPU.")
+            print()
+    except ImportError:
+        missing.append("torch")
     
     try:
         import faster_whisper

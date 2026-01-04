@@ -90,12 +90,10 @@ class TranscriptionWorker(QThread):
         self._has_task = False
     
     def set_audio(self, audio_data: NDArray[np.float32], sample_rate: int = 16000) -> None:
-        """Définit l'audio à transcrire (prend ownership du buffer)"""
+        """Définit l'audio à transcrire"""
         self._mutex.lock()
         try:
-            # Note: On ne copie plus le buffer pour économiser la RAM
-            # L'appelant (AudioRecorderWorker) crée un nouveau buffer à chaque enregistrement
-            self._audio_data = audio_data
+            self._audio_data = audio_data.copy()
             self._sample_rate = sample_rate
             self._has_task = True
             self._condition.wakeOne()

@@ -10,4 +10,4 @@ if not exist ".venv\Scripts\pythonw.exe" (
 )
 
 :: Lance l'application SANS console (pythonw)
-start "" ".venv\Scripts\pythonw.exe" main.py
+start "" .venv\Scripts\pythonw.exe main.py

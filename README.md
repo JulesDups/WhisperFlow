@@ -24,13 +24,13 @@ Transformez votre voix en texte instantanément, en toute confidentialité, sans
 
 ## 🖥️ Prérequis
 
-| Composant | Minimum | Recommandé |
-|-----------|---------|------------|
-| **GPU** | NVIDIA GTX 1060 (6GB) | RTX 3080+ / RTX 4080 |
-| **VRAM** | 6 GB | 12+ GB |
-| **RAM** | 8 GB | 16+ GB |
-| **OS** | Windows 10 | Windows 11 |
-| **Python** | 3.10 | 3.11+ |
+| Composant  | Minimum               | Recommandé           |
+| ---------- | --------------------- | -------------------- |
+| **GPU**    | NVIDIA GTX 1060 (6GB) | RTX 3080+ / RTX 4080 |
+| **VRAM**   | 6 GB                  | 12+ GB               |
+| **RAM**    | 8 GB                  | 16+ GB               |
+| **OS**     | Windows 10            | Windows 11           |
+| **Python** | 3.10                  | 3.11                 |
 
 ### Logiciels requis
 
@@ -53,6 +53,7 @@ setup.bat
 ```
 
 Le script `setup.bat` va automatiquement :
+
 - Créer un environnement virtuel Python
 - Installer PyTorch avec support CUDA 12.1
 - Installer toutes les dépendances
@@ -85,11 +86,11 @@ python main.py
 
 ### Raccourcis clavier
 
-| Touche | Action |
-|--------|--------|
-| **F2** | Push-to-Talk (maintenir pour parler) |
-| **F3** | Copier la transcription |
-| **ESC** | Quitter l'application |
+| Touche  | Action                               |
+| ------- | ------------------------------------ |
+| **F2**  | Push-to-Talk (maintenir pour parler) |
+| **F3**  | Copier la transcription              |
+| **ESC** | Quitter l'application                |
 
 ### Workflow typique
 
@@ -118,14 +119,14 @@ MODEL_ID = "openai/whisper-large-v3-turbo"
 
 ### Modèles disponibles
 
-| Modèle | VRAM | Précision | Vitesse |
-|--------|------|-----------|---------|
-| `whisper-tiny` | ~1 GB | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| `whisper-base` | ~1 GB | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| `whisper-small` | ~2 GB | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| `whisper-medium` | ~5 GB | ⭐⭐⭐⭐ | ⭐⭐ |
-| `whisper-large-v3` | ~10 GB | ⭐⭐⭐⭐⭐ | ⭐ |
-| **`whisper-large-v3-turbo`** | ~6 GB | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| Modèle                       | VRAM   | Précision  | Vitesse    |
+| ---------------------------- | ------ | ---------- | ---------- |
+| `whisper-tiny`               | ~1 GB  | ⭐⭐       | ⭐⭐⭐⭐⭐ |
+| `whisper-base`               | ~1 GB  | ⭐⭐⭐     | ⭐⭐⭐⭐   |
+| `whisper-small`              | ~2 GB  | ⭐⭐⭐⭐   | ⭐⭐⭐     |
+| `whisper-medium`             | ~5 GB  | ⭐⭐⭐⭐   | ⭐⭐       |
+| `whisper-large-v3`           | ~10 GB | ⭐⭐⭐⭐⭐ | ⭐         |
+| **`whisper-large-v3-turbo`** | ~6 GB  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     |
 
 ---
 
@@ -136,19 +137,24 @@ WhisperFlow/
 ├── main.py                 # Point d'entrée
 ├── config.py               # Configuration centralisée
 ├── requirements.txt        # Dépendances Python
-├── setup.bat              # Script d'installation
-├── run.bat                # Lanceur rapide
-├── test_gpu.py            # Diagnostic GPU
+├── setup.bat               # Script d'installation
+├── run.bat                 # Lanceur rapide
+├── test_gpu.py             # Diagnostic GPU
+├── LICENSE                 # Licence MIT
 └── src/
-    ├── audio_engine.py         # Capture audio (SoundDevice)
-    ├── transcription_service.py # Moteur IA (Whisper)
+    ├── audio_engine.py           # Capture audio (SoundDevice)
+    ├── transcription_service.py  # Moteur IA (Faster-Whisper)
+    ├── smart_formatter.py        # Formatage intelligent du texte
     ├── ui/
-    │   ├── main_window.py      # Fenêtre PyQt6
-    │   ├── styles.py           # Styles CSS
-    │   └── workers.py          # Threading QThread
+    │   ├── main_window.py        # Fenêtre PyQt6
+    │   ├── key_capture_dialog.py # Configuration des raccourcis
+    │   ├── styles.py             # Styles CSS
+    │   └── workers.py            # Threading QThread
     └── utils/
-        ├── clipboard.py        # Presse-papier
-        └── hotkey_listener.py  # Raccourcis globaux
+        ├── clipboard.py          # Presse-papier & frappe auto
+        ├── history.py            # Historique des transcriptions
+        ├── hotkey_listener.py    # Raccourcis globaux
+        └── settings.py           # Persistance des paramètres
 ```
 
 ---
@@ -187,19 +193,20 @@ WhisperFlow/
 
 Testé sur RTX 4080 (16 GB VRAM) :
 
-| Durée audio | Temps transcription | RTF* |
-|-------------|---------------------|------|
-| 5 secondes | ~0.5s | 0.1x |
-| 30 secondes | ~2s | 0.07x |
-| 1 minute | ~3s | 0.05x |
+| Durée audio | Temps transcription | RTF\* |
+| ----------- | ------------------- | ----- |
+| 5 secondes  | ~0.5s               | 0.1x  |
+| 30 secondes | ~2s                 | 0.07x |
+| 1 minute    | ~3s                 | 0.05x |
 
-*RTF (Real-Time Factor) : < 1 = plus rapide que temps réel
+\*RTF (Real-Time Factor) : < 1 = plus rapide que temps réel
 
 ---
 
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues ! N'hésitez pas à :
+
 - 🐛 Signaler des bugs
 - 💡 Proposer des fonctionnalités
 - 🔧 Soumettre des pull requests
@@ -214,6 +221,7 @@ MIT License - Libre d'utilisation personnelle et commerciale.
 
 ## 🙏 Crédits
 
+- [Faster-Whisper](https://github.com/SYSTRAN/faster-whisper) - Moteur de transcription optimisé
 - [OpenAI Whisper](https://github.com/openai/whisper) - Modèle de transcription
 - [Hugging Face Transformers](https://huggingface.co/transformers) - Pipeline ML
 - [PyQt6](https://riverbankcomputing.com/software/pyqt) - Interface graphique

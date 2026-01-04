@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 >nul
 title WhisperFlow Desktop - Debug
 cd /d "%~dp0"
 
@@ -12,7 +11,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 :: Lance l'application AVEC console (pour voir les logs)
-".venv\Scripts\python.exe" main.py
+.venv\Scripts\python.exe main.py
 
 :: Garde la console ouverte en cas d'erreur
 if errorlevel 1 (
