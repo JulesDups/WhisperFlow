@@ -1,0 +1,32 @@
+# WhisperFlow Desktop - Dependencies
+# Installation: pip install -r requirements.txt
+
+# ============================================
+# Core Framework
+# ============================================
+PyQt6>=6.6.0
+PyQt6-Qt6>=6.6.0
+
+# ============================================
+# Audio Processing
+# ============================================
+sounddevice>=0.4.6
+numpy>=1.24.0
+
+# ============================================
+# AI / Machine Learning
+# Faster-Whisper utilise CTranslate2 (plus léger que PyTorch)
+# PyTorch est optionnel (seulement pour les infos GPU)
+# ============================================
+faster-whisper>=1.0.0
+
+# ============================================
+# System Integration
+# ============================================
+pynput>=1.7.6
+pyperclip>=1.8.2
+
+# ============================================
+# Utilities
+# ============================================
+colorama>=0.4.6
