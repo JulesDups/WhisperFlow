@@ -89,7 +89,7 @@ class SettingsManager:
     Thread-safe pour les accès concurrents.
     """
 
-    __slots__ = ("_settings_file", "_settings", "_lock", "_callbacks")
+    __slots__ = ("_settings_file", "_settings", "_lock", "_callbacks", "_save_timer", "_save_delay")
 
     # Taille max du fichier de config (protection contre fichiers malveillants)
     MAX_CONFIG_SIZE: int = 10 * 1024  # 10 KB
@@ -99,6 +99,8 @@ class SettingsManager:
         self._settings = UserSettings()
         self._lock = threading.RLock()  # RLock pour permettre réentrance
         self._callbacks: list[Callable[[str, Any], None]] = []
+        self._save_timer: threading.Timer | None = None
+        self._save_delay: float = 0.5  # 500ms debounce
 
         # Charge les paramètres existants
         self.load()
@@ -173,7 +175,7 @@ class SettingsManager:
             setattr(self._settings, key, value)
 
         if save:
-            self.save()
+            self._schedule_save()
 
         # Notifie les callbacks (hors du lock)
         for callback in self._callbacks:
@@ -181,6 +183,14 @@ class SettingsManager:
                 callback(key, value)
             except Exception:
                 pass
+
+    def _schedule_save(self) -> None:
+        """Planifie une sauvegarde avec debounce de 500ms"""
+        if self._save_timer is not None:
+            self._save_timer.cancel()
+        self._save_timer = threading.Timer(self._save_delay, self.save)
+        self._save_timer.daemon = True
+        self._save_timer.start()
 
     def on_change(self, callback: Callable[[str, Any], None]) -> None:
         """Enregistre un callback appelé lors des changements"""

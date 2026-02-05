@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -60,8 +61,8 @@ class AudioEngine:
         self._is_recording = False
         self._recording_lock = threading.Lock()
 
-        # Buffer pour les données audio
-        self._audio_buffer: list[np.ndarray] = []
+        # Buffer pour les données audio (maxlen ~30s à 16kHz/1024 blocksize)
+        self._audio_buffer: deque[np.ndarray] = deque(maxlen=500)
         self._buffer_lock = threading.Lock()
 
         # Stream audio
@@ -69,6 +70,9 @@ class AudioEngine:
 
         # Callbacks
         self._on_audio_level: Callable[[float], None] | None = None
+
+        # Compteur pour échantillonnage du calcul RMS
+        self._level_counter: int = 0
 
         # Statistiques
         self._start_time: float = 0
@@ -98,14 +102,15 @@ class AudioEngine:
         # Utilise ravel() si déjà contiguous, sinon flatten()
         audio_data: NDArray[np.float32] = indata.ravel().copy() if indata.flags["C_CONTIGUOUS"] else indata.flatten()
 
-        # Calcul du niveau audio (RMS) optimisé avec np.dot
+        # Calcul du niveau audio (RMS) échantillonné 1 fois sur 3
         callback = self._on_audio_level
         if callback is not None:
-            rms = np.sqrt(np.dot(audio_data, audio_data) / len(audio_data))
-            # Utilise np.clip et calcul log optimisé
-            level_db = 20.0 * np.log10(max(rms, 1e-10))
-            normalized_level = np.clip((level_db + 60.0) / 60.0, 0.0, 1.0)
-            callback(float(normalized_level))
+            self._level_counter += 1
+            if self._level_counter % 3 == 0:
+                rms = np.sqrt(np.dot(audio_data, audio_data) / len(audio_data))
+                level_db = 20.0 * np.log10(max(rms, 1e-10))
+                normalized_level = np.clip((level_db + 60.0) / 60.0, 0.0, 1.0)
+                callback(float(normalized_level))
 
         # Ajoute au buffer
         with self._buffer_lock:

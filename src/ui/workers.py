@@ -92,7 +92,7 @@ class TranscriptionWorker(QThread):
         """Définit l'audio à transcrire"""
         self._mutex.lock()
         try:
-            self._audio_data = audio_data.copy()
+            self._audio_data = audio_data
             self._sample_rate = sample_rate
             self._has_task = True
             self._condition.wakeOne()
@@ -197,7 +197,7 @@ class AudioRecorderWorker(QThread):
             self._mutex.lock()
             try:
                 # Attend un signal de démarrage/arrêt
-                self._condition.wait(self._mutex, 100)  # Timeout 100ms
+                self._condition.wait(self._mutex, 50)  # Timeout 50ms
                 should_record = self._should_record
             finally:
                 self._mutex.unlock()

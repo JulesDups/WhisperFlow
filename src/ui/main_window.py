@@ -597,7 +597,7 @@ class MainWindow(QMainWindow):
             # Tape automatiquement si mode "type" activé
             if hotkey_config.OUTPUT_MODE == OutputMode.TYPE:
                 # Délai minimal pour laisser la touche PTT être relâchée
-                QTimer.singleShot(30, lambda: self._auto_type_text(text))
+                QTimer.singleShot(10, lambda: self._auto_type_text(text))
 
     def _auto_type_text(self, text: str):
         """Tape automatiquement le texte dans l'application active"""

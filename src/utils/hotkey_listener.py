@@ -97,6 +97,14 @@ class GlobalHotkeyListener:
         "cmd_r": "cmd",
     }
 
+    # Virtual key code mapping (Windows)
+    VK_MAP = {
+        0xDE: "'",  # VK_OEM_7 (apostrophe sur QWERTY)
+        0xC0: "`",  # VK_OEM_3 (backtick)
+        0xDC: "\\",  # VK_OEM_5 (backslash)
+        0xDD: "²",  # VK_OEM_6 (² sur AZERTY français)
+    }
+
     def __init__(self) -> None:
         # Listener pynput
         self._listener: keyboard.Listener | None = None
@@ -168,15 +176,8 @@ class GlobalHotkeyListener:
 
             # Virtual key code (Windows) - pour les touches non mappées
             if hasattr(key, "vk") and key.vk:
-                # Mapping des virtual key codes spéciaux
-                vk_map = {
-                    0xDE: "'",  # VK_OEM_7 (apostrophe sur QWERTY)
-                    0xC0: "`",  # VK_OEM_3 (backtick)
-                    0xDC: "\\",  # VK_OEM_5 (backslash)
-                    0xDD: "²",  # VK_OEM_6 (² sur AZERTY français)
-                }
-                if key.vk in vk_map:
-                    return vk_map[key.vk]
+                if key.vk in self.VK_MAP:
+                    return self.VK_MAP[key.vk]
                 # Retourne le code comme chaîne pour debug
                 logger.debug("VK code non mappe: 0x%02X", key.vk)
 

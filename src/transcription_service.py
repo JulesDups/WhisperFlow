@@ -295,7 +295,7 @@ class TranscriptionService:
             return None
         finally:
             # Force garbage collection périodiquement
-            if self._total_transcriptions % 10 == 0:
+            if self._total_transcriptions % 25 == 0:
                 gc.collect()
                 if _HAS_TORCH and torch.cuda.is_available():
                     torch.cuda.empty_cache()

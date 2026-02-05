@@ -91,8 +91,8 @@ class TextTyper:
     __slots__ = ("keyboard", "delay", "_lock")
 
     # Délais optimisés pour rapidité (réduits au minimum fiable)
-    CLIPBOARD_READY_DELAY: float = 0.01  # 10ms suffit
-    PASTE_COMPLETE_DELAY: float = 0.02  # 20ms suffit
+    CLIPBOARD_READY_DELAY: float = 0.005  # 5ms suffit
+    PASTE_COMPLETE_DELAY: float = 0.01  # 10ms suffit
 
     def __init__(self, delay: float = 0.01) -> None:
         self.keyboard = KeyboardController()

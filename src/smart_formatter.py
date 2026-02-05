@@ -394,6 +394,10 @@ class RuleBasedFormatter:
     Plus léger et rapide, pour les cas où l'IA n'est pas nécessaire.
     """
 
+    # Cache pour éviter de reformater des textes identiques
+    _cache: dict[str, str] = {}
+    _CACHE_MAX: int = 64
+
     # Patterns de correction
     PATTERNS = [
         # Espaces avant ponctuation (français)
@@ -441,6 +445,9 @@ class RuleBasedFormatter:
         if not text:
             return text
 
+        if text in cls._cache:
+            return cls._cache[text]
+
         result = text.strip()
 
         # Applique les patterns
@@ -464,6 +471,10 @@ class RuleBasedFormatter:
                 result += " ?"
             else:
                 result += "."
+
+        if len(cls._cache) >= cls._CACHE_MAX:
+            cls._cache.clear()
+        cls._cache[text] = result
 
         return result
 
