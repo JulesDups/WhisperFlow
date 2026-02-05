@@ -4,9 +4,7 @@ Définition des styles CSS pour PyQt6
 Style moderne inspiré macOS/Catppuccin
 """
 
-import sys
-sys.path.append('../..')
-from config import ui_config
+from ..config import ui_config
 
 
 def get_main_stylesheet() -> str:
@@ -266,12 +264,12 @@ def get_main_stylesheet() -> str:
 
 def get_recording_pulse_style() -> str:
     """Style pour l'animation de pulsation pendant l'enregistrement"""
-    return f"""
-    @keyframes pulse {{
-        0% {{ opacity: 1; }}
-        50% {{ opacity: 0.5; }}
-        100% {{ opacity: 1; }}
-    }}
+    return """
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
     """
 
 

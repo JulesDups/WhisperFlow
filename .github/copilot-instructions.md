@@ -6,18 +6,22 @@ Application PyQt6 de transcription vocale locale utilisant Whisper Large V3 Turb
 
 ```
 main.py                    → Point d'entrée, vérification des dépendances
-config.py                  → Configuration centralisée (dataclasses)
 src/
+  config.py                → Configuration centralisée (dataclasses + enums)
   audio_engine.py          → Capture audio (SoundDevice, 16kHz mono)
-  transcription_service.py → Pipeline Whisper (transformers, GPU/CUDA)
+  transcription_service.py → Pipeline Faster-Whisper (CTranslate2, GPU/CUDA)
+  smart_formatter.py       → Formatage du texte transcrit
   ui/
     main_window.py         → Fenêtre principale PyQt6 (sans bordure, draggable)
     workers.py             → QThread workers pour tâches async
-    styles.py              → Thème sombre (QSS)
+    styles.py              → Thème sombre Catppuccin (QSS)
+    key_capture_dialog.py  → Dialogue capture touche PTT
   utils/
     hotkey_listener.py     → Raccourcis globaux (pynput)
     settings.py            → Persistance JSON des préférences
     clipboard.py           → Copie/frappe automatique du texte
+    history.py             → Historique des transcriptions
+    logger.py              → Configuration logging
 ```
 
 ## Flux de données
@@ -31,7 +35,7 @@ src/
 
 ### Configuration
 
-- **Toujours utiliser les dataclasses de** [config.py](../config.py) : `app_config`, `audio_config`, `model_config`, `hotkey_config`, `ui_config`
+- **Toujours utiliser les dataclasses de** [src/config.py](../src/config.py) : `app_config`, `audio_config`, `model_config`, `hotkey_config`, `ui_config`
 - Ne pas hardcoder de valeurs de configuration dans les modules
 
 ### Threading PyQt6
@@ -49,14 +53,13 @@ Utiliser l'enum `AppState` dans [main_window.py](../src/ui/main_window.py) :
 - `RECORDING` → capture en cours
 - `PROCESSING` → transcription GPU
 
-### Imports locaux
+### Imports
 
-Les modules utilisent `sys.path.append('..')` pour les imports relatifs. Exemple :
+Les modules utilisent des imports relatifs Python. Exemple :
 
 ```python
-import sys
-sys.path.append('..')
-from config import audio_config
+from .config import audio_config
+from ..utils.settings import get_ptt_key
 ```
 
 ## Commandes de développement

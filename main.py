@@ -17,57 +17,56 @@ Auteur: WhisperFlow Team
 Licence: MIT
 """
 
+import logging
 import sys
-import os
 
-# Ajoute le répertoire courant au path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication
 
-from config import app_config
+from src.config import app_config
+from src.utils.logger import setup_logging
 
 
 def check_requirements():
     """Vérifie que toutes les dépendances sont installées"""
     missing = []
-    
+
     try:
-        import PyQt6
+        import PyQt6  # noqa: F401
     except ImportError:
         missing.append("PyQt6")
-    
+
     try:
         import torch
+
         if not torch.cuda.is_available():
             print("⚠️  AVERTISSEMENT: CUDA n'est pas disponible!")
             print("   La transcription sera très lente sans GPU.")
             print()
     except ImportError:
         missing.append("torch")
-    
+
     try:
-        import faster_whisper
+        import faster_whisper  # noqa: F401
     except ImportError:
         missing.append("faster-whisper")
-    
+
     try:
-        import sounddevice
+        import sounddevice  # noqa: F401
     except ImportError:
         missing.append("sounddevice")
-    
+
     try:
-        import pynput
+        import pynput  # noqa: F401
     except ImportError:
         missing.append("pynput")
-    
+
     try:
-        import pyperclip
+        import pyperclip  # noqa: F401
     except ImportError:
         missing.append("pyperclip")
-    
+
     if missing:
         print("❌ Dépendances manquantes:")
         for dep in missing:
@@ -83,7 +82,10 @@ def check_requirements():
 
 def main():
     """Point d'entrée principal"""
-    
+
+    setup_logging()
+    logger = logging.getLogger(__name__)  # noqa: F841
+
     # Bannière
     print()
     print("╔════════════════════════════════════════════════════════════╗")
@@ -93,28 +95,29 @@ def main():
     print("║                                                            ║")
     print("╚════════════════════════════════════════════════════════════╝")
     print()
-    
+
     # Vérifie les dépendances
     check_requirements()
-    
+
     # Configuration High DPI
-    if hasattr(Qt.ApplicationAttribute, 'AA_EnableHighDpiScaling'):
+    if hasattr(Qt.ApplicationAttribute, "AA_EnableHighDpiScaling"):
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-    if hasattr(Qt.ApplicationAttribute, 'AA_UseHighDpiPixmaps'):
+    if hasattr(Qt.ApplicationAttribute, "AA_UseHighDpiPixmaps"):
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
-    
+
     # Crée l'application
     app = QApplication(sys.argv)
     app.setApplicationName(app_config.APP_NAME)
     app.setApplicationVersion(app_config.APP_VERSION)
-    
+
     # Police par défaut
     font = QFont("Segoe UI", 10)
     app.setFont(font)
-    
+
     # Affiche les infos GPU
     try:
         import torch
+
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1024**3
@@ -125,7 +128,7 @@ def main():
         print("⚠️  PyTorch non installé")
     except Exception as e:
         print(f"⚠️  Erreur détection GPU: {e}")
-    
+
     print()
     print("📌 Raccourcis clavier:")
     print("   F2  - Push-to-Talk (maintenir pour parler)")
@@ -134,13 +137,13 @@ def main():
     print()
     print("🚀 Démarrage de l'application...")
     print()
-    
+
     # Importe et crée la fenêtre principale
     from src.ui.main_window import MainWindow
-    
+
     window = MainWindow()
     window.show()
-    
+
     # Boucle d'événements
     sys.exit(app.exec())
 

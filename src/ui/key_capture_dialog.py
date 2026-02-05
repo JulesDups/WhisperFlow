@@ -3,62 +3,55 @@ WhisperFlow Desktop - Key Capture Dialog
 Dialogue pour capturer une nouvelle touche ou combinaison de touches
 """
 
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
-)
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QKeyEvent, QFont
+from PyQt6.QtGui import QFont, QKeyEvent
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
-import sys
-sys.path.append('../..')
-from config import ui_config
+from ..config import ui_config
 
 
 class KeyCaptureDialog(QDialog):
     """
     Dialogue modal pour capturer une nouvelle touche ou combinaison.
-    
+
     Supporte:
     - Touches simples (F2, F3, etc.)
     - Combinaisons avec modificateurs (Ctrl+', Alt+Space, etc.)
     """
-    
+
     key_captured = pyqtSignal(str)  # Émet le nom de la touche/combinaison capturée
-    
+
     def __init__(self, current_key: str = "F2", parent=None):
         super().__init__(parent)
         self.current_key = current_key
         self.captured_key: str = ""
         self._current_modifiers: set[str] = set()
-        
+
         self._setup_window()
         self._setup_ui()
         self._apply_styles()
-    
+
     def _setup_window(self):
         """Configure la fenêtre"""
         self.setWindowTitle("Configurer le raccourci")
         self.setFixedSize(400, 220)
         self.setModal(True)
-        
+
         # Style de fenêtre
-        self.setWindowFlags(
-            Qt.WindowType.Dialog |
-            Qt.WindowType.FramelessWindowHint
-        )
-    
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+
     def _setup_ui(self):
         """Construit l'interface"""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
-        
+
         # Titre
         title = QLabel("🎹 Configurer le raccourci Push-to-Talk")
         title.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
-        
+
         # Instructions
         self.instruction_label = QLabel(
             f"Raccourci actuel: <b>{self.current_key.upper()}</b><br><br>"
@@ -68,7 +61,7 @@ class KeyCaptureDialog(QDialog):
         self.instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.instruction_label.setWordWrap(True)
         layout.addWidget(self.instruction_label)
-        
+
         # Label pour la touche capturée
         self.key_label = QLabel("")
         self.key_label.setObjectName("capturedKeyLabel")
@@ -76,23 +69,23 @@ class KeyCaptureDialog(QDialog):
         self.key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.key_label.setMinimumHeight(50)
         layout.addWidget(self.key_label)
-        
+
         # Boutons
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
-        
+
         cancel_btn = QPushButton("Annuler")
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
-        
+
         self.confirm_btn = QPushButton("Confirmer")
         self.confirm_btn.setEnabled(False)
         self.confirm_btn.clicked.connect(self._confirm)
         self.confirm_btn.setObjectName("confirmButton")
         button_layout.addWidget(self.confirm_btn)
-        
+
         layout.addLayout(button_layout)
-    
+
     def _apply_styles(self):
         """Applique les styles"""
         self.setStyleSheet(f"""
@@ -130,16 +123,16 @@ class KeyCaptureDialog(QDialog):
                 background-color: {ui_config.COLOR_TEXT_DIM};
             }}
         """)
-    
+
     def keyPressEvent(self, event: QKeyEvent):
         """Capture la touche appuyée avec modificateurs"""
         key = event.key()
         modifiers = event.modifiers()
-        
+
         # Ignore certaines touches
         if key in (Qt.Key.Key_unknown,):
             return
-        
+
         # Collecte les modificateurs
         mod_parts = []
         if modifiers & Qt.KeyboardModifier.ControlModifier:
@@ -148,17 +141,16 @@ class KeyCaptureDialog(QDialog):
             mod_parts.append("Alt")
         if modifiers & Qt.KeyboardModifier.ShiftModifier:
             mod_parts.append("Shift")
-        
+
         # Si c'est juste un modificateur seul, affiche-le mais ne confirme pas
-        if key in (Qt.Key.Key_Control, Qt.Key.Key_Alt, Qt.Key.Key_Shift, 
-                   Qt.Key.Key_Meta, Qt.Key.Key_AltGr):
+        if key in (Qt.Key.Key_Control, Qt.Key.Key_Alt, Qt.Key.Key_Shift, Qt.Key.Key_Meta, Qt.Key.Key_AltGr):
             if mod_parts:
                 self.key_label.setText(" + ".join(mod_parts) + " + ...")
             return
-        
+
         # Convertit en nom de touche
         key_name = self._key_to_name(key)
-        
+
         if key_name:
             # Construit la combinaison complète
             if mod_parts:
@@ -167,25 +159,24 @@ class KeyCaptureDialog(QDialog):
             else:
                 full_hotkey = key_name
                 display_name = key_name.upper()
-            
+
             self.captured_key = full_hotkey.lower()
             self.key_label.setText(display_name)
             self.confirm_btn.setEnabled(True)
             self.instruction_label.setText(
-                f"Nouveau raccourci: <b>{display_name}</b><br><br>"
-                "Cliquez sur Confirmer pour valider"
+                f"Nouveau raccourci: <b>{display_name}</b><br><br>Cliquez sur Confirmer pour valider"
             )
-    
+
     def _key_to_name(self, key: int) -> str:
         """Convertit un code Qt.Key en nom de touche"""
         # Touches de fonction
         if Qt.Key.Key_F1 <= key <= Qt.Key.Key_F12:
             return f"f{key - Qt.Key.Key_F1 + 1}"
-        
+
         # F13-F24
         if Qt.Key.Key_F13 <= key <= Qt.Key.Key_F24:
             return f"f{key - Qt.Key.Key_F13 + 13}"
-        
+
         # Touches spéciales
         special_keys = {
             Qt.Key.Key_Space: "space",
@@ -208,7 +199,7 @@ class KeyCaptureDialog(QDialog):
             Qt.Key.Key_Enter: "enter",
             # Caractères spéciaux courants
             Qt.Key.Key_Apostrophe: "'",
-            Qt.Key.Key_QuoteDbl: "\"",
+            Qt.Key.Key_QuoteDbl: '"',
             Qt.Key.Key_Semicolon: ";",
             Qt.Key.Key_Colon: ":",
             Qt.Key.Key_Comma: ",",
@@ -250,40 +241,41 @@ class KeyCaptureDialog(QDialog):
             Qt.Key.Key_Less: "<",
             Qt.Key.Key_Greater: ">",
         }
-        
+
         if key in special_keys:
             return special_keys[key]
-        
+
         # Touches alphanumériques
         if Qt.Key.Key_A <= key <= Qt.Key.Key_Z:
             return chr(key).lower()
-        
+
         if Qt.Key.Key_0 <= key <= Qt.Key.Key_9:
             return chr(key)
-        
+
         # Pavé numérique
         if Qt.Key.Key_0 <= key - 0x01000000 <= Qt.Key.Key_9:
             return f"num_{key - Qt.Key.Key_0 - 0x01000000}"
-        
+
         # Fallback: essaie de récupérer le caractère directement
         # Utile pour les touches non mappées explicitement
         try:
             from PyQt6.QtGui import QKeySequence
+
             seq = QKeySequence(key)
             char = seq.toString()
             if char and len(char) == 1 and char.isprintable():
                 return char.lower()
-        except:
+        except (ImportError, ValueError):
             pass
-        
+
         return ""
-    
+
     def _confirm(self):
         """Confirme la sélection"""
         if self.captured_key:
             self.key_captured.emit(self.captured_key)
             self.accept()
-    
+
     def get_key(self) -> str:
         """Retourne la touche capturée après fermeture"""
         return self.captured_key
