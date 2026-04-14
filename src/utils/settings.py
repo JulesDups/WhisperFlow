@@ -25,6 +25,7 @@ class UserSettings:
     push_to_talk_key: str = "f2"
     output_mode: str = OutputMode.TYPE
     language: str = "fr"
+    ui_language: str = "auto"
 
     # Smart Formatting
     smart_formatting_enabled: bool = True
@@ -56,6 +57,9 @@ class UserSettings:
         ptt_key = str(data.get("push_to_talk_key", "f2"))[:50]
         output_mode = data.get("output_mode", OutputMode.TYPE)
         language = str(data.get("language", "fr"))[:10]
+        ui_language = str(data.get("ui_language", "auto"))[:10]
+        if ui_language not in ("auto", "en", "fr"):
+            ui_language = "auto"
 
         # Valide output_mode
         try:
@@ -115,6 +119,7 @@ class UserSettings:
             push_to_talk_key=ptt_key,
             output_mode=output_mode,
             language=language,
+            ui_language=ui_language,
             smart_formatting_enabled=smart_enabled,
             smart_formatting_level=smart_level,
             window_mode=window_mode,
@@ -399,3 +404,14 @@ def set_url_notes_format(fmt: str) -> None:
     """Définit le format d'export des notes URL."""
     if fmt in ("txt", "json"):
         settings_manager.set("url_notes_format", fmt)
+
+
+def get_ui_language_setting() -> str:
+    """Retourne la langue UI configurée ('auto', 'en', 'fr')."""
+    return settings_manager.get("ui_language", "auto")
+
+
+def set_ui_language_setting(lang: str) -> None:
+    """Définit la langue UI (whitelist: auto, en, fr)."""
+    if lang in ("auto", "en", "fr"):
+        settings_manager.set("ui_language", lang)

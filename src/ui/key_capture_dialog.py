@@ -8,6 +8,7 @@ from PyQt6.QtGui import QFont, QKeyEvent
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from ..config import ui_config
+from ..i18n import t
 
 
 class KeyCaptureDialog(QDialog):
@@ -33,7 +34,7 @@ class KeyCaptureDialog(QDialog):
 
     def _setup_window(self):
         """Configure la fenêtre"""
-        self.setWindowTitle("Configurer le raccourci")
+        self.setWindowTitle(t("hotkey_dialog_title"))
         self.setFixedSize(400, 220)
         self.setModal(True)
 
@@ -47,16 +48,16 @@ class KeyCaptureDialog(QDialog):
         layout.setSpacing(16)
 
         # Titre
-        title = QLabel("🎹 Configurer le raccourci Push-to-Talk")
+        title = QLabel(t("hotkey_dialog_heading"))
         title.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
         # Instructions
         self.instruction_label = QLabel(
-            f"Raccourci actuel: <b>{self.current_key.upper()}</b><br><br>"
-            "Appuyez sur une touche ou combinaison...<br>"
-            "<span style='color: #6C7086; font-size: 11px;'>Ex: F2, Ctrl+', Alt+Space</span>"
+            f"{t('hotkey_current', key=self.current_key.upper())}<br><br>"
+            f"{t('hotkey_press_key')}<br>"
+            f"<span style='color: #6C7086; font-size: 11px;'>{t('hotkey_examples')}</span>"
         )
         self.instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.instruction_label.setWordWrap(True)
@@ -74,11 +75,11 @@ class KeyCaptureDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
 
-        cancel_btn = QPushButton("Annuler")
+        cancel_btn = QPushButton(t("btn_cancel"))
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
 
-        self.confirm_btn = QPushButton("Confirmer")
+        self.confirm_btn = QPushButton(t("btn_confirm"))
         self.confirm_btn.setEnabled(False)
         self.confirm_btn.clicked.connect(self._confirm)
         self.confirm_btn.setObjectName("confirmButton")
@@ -164,7 +165,7 @@ class KeyCaptureDialog(QDialog):
             self.key_label.setText(display_name)
             self.confirm_btn.setEnabled(True)
             self.instruction_label.setText(
-                f"Nouveau raccourci: <b>{display_name}</b><br><br>Cliquez sur Confirmer pour valider"
+                f"{t('hotkey_new', display_name=f'<b>{display_name}</b>')}<br><br>{t('hotkey_confirm_hint')}"
             )
 
     def _key_to_name(self, key: int) -> str:

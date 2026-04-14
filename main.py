@@ -25,6 +25,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication
 
 from src.config import app_config
+from src.i18n import t
 from src.utils.logger import setup_logging
 
 
@@ -41,8 +42,7 @@ def check_requirements():
         import torch
 
         if not torch.cuda.is_available():
-            print("⚠️  AVERTISSEMENT: CUDA n'est pas disponible!")
-            print("   La transcription sera très lente sans GPU.")
+            print(t("console_no_cuda"))
             print()
     except ImportError:
         missing.append("torch")
@@ -68,15 +68,10 @@ def check_requirements():
         missing.append("pyperclip")
 
     if missing:
-        print("❌ Dépendances manquantes:")
-        for dep in missing:
-            print(f"   - {dep}")
+        dep_list = "\n   - ".join(missing)
+        print(t("console_missing_deps", dep=dep_list))
         print()
-        print("Installez-les avec:")
-        print("   pip install -r requirements.txt")
-        print()
-        print("Pour PyTorch avec CUDA:")
-        print("   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
+        print(t("console_pytorch_hint"))
         sys.exit(1)
 
 
@@ -126,21 +121,18 @@ def main():
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             gpu_mem = torch.cuda.get_device_properties(0).total_memory / 1024**3
-            print(f"🖥️  GPU détecté: {gpu_name} ({gpu_mem:.1f} GB)")
+            print(t("console_gpu_detected", gpu_name=gpu_name, gpu_mem=gpu_mem))
         else:
-            print("⚠️  Mode CPU (lent)")
+            print(t("console_cpu_mode"))
     except ImportError:
-        print("⚠️  PyTorch non installé")
+        print(t("console_no_pytorch"))
     except Exception as e:
-        print(f"⚠️  Erreur détection GPU: {e}")
+        print(t("console_gpu_error", e=e))
 
     print()
-    print("📌 Raccourcis clavier:")
-    print("   F2  - Push-to-Talk (maintenir pour parler)")
-    print("   F3  - Copier la transcription")
-    print("   ESC - Quitter")
+    print(t("console_shortcuts"))
     print()
-    print("🚀 Démarrage de l'application...")
+    print(t("console_starting"))
     print()
 
     # Importe et crée la fenêtre principale

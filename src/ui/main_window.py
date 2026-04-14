@@ -44,6 +44,7 @@ from ..config import (
     hotkey_config,
     model_config,
 )
+from ..i18n import t
 from ..transcription_service import TranscriptionService
 from ..utils.clipboard import copy_to_clipboard, type_text
 from ..utils.history import history as transcription_history
@@ -113,7 +114,7 @@ class _TitleBar(QWidget):
         brand.setContentsMargins(0, 0, 0, 0)
         brand.setSpacing(2)
 
-        self._eyebrow = QLabel("DESKTOP · VOICE")
+        self._eyebrow = QLabel(t("app_eyebrow"))
         self._eyebrow.setObjectName("brandEyebrow")
         brand.addWidget(self._eyebrow)
 
@@ -136,7 +137,7 @@ class _TitleBar(QWidget):
         self._close_btn = QPushButton("×")
         self._close_btn.setObjectName("closeButton")
         self._close_btn.setFixedSize(28, 28)
-        self._close_btn.setToolTip("Close (Esc)")
+        self._close_btn.setToolTip(t("close_tooltip"))
         self._close_btn.clicked.connect(self.close_clicked.emit)
         root.addWidget(self._close_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -267,7 +268,6 @@ class MainWindow(QMainWindow):
         self.menu_btn.configure_ptt_requested.connect(self._open_key_config)
         self.menu_btn.toggle_floating_requested.connect(self._toggle_window_mode)
         self.menu_btn.toggle_recording_mode_requested.connect(self._toggle_recording_mode)
-        self.menu_btn.quit_requested.connect(self.close)
         self.menu_btn.set_floating(self._is_floating)
         self.menu_btn.set_recording_mode_vad(self._recording_mode == RecordingMode.VOICE_DETECTION)
 
@@ -325,15 +325,15 @@ class MainWindow(QMainWindow):
         actions_row.setSpacing(theme.SPACE_2)
         actions_row.addStretch()
 
-        self.open_folder_btn = QPushButton("Open folder")
+        self.open_folder_btn = QPushButton(t("btn_open_folder"))
         self.open_folder_btn.setObjectName("ghostBtn")
         self.open_folder_btn.setFixedHeight(34)
         self.open_folder_btn.setEnabled(False)
-        self.open_folder_btn.setToolTip("Reveal last transcript in File Explorer")
+        self.open_folder_btn.setToolTip(t("tooltip_open_folder"))
         self.open_folder_btn.clicked.connect(self._open_last_notes_folder)
         actions_row.addWidget(self.open_folder_btn)
 
-        self.copy_btn = QPushButton("Copy")
+        self.copy_btn = QPushButton(t("btn_copy"))
         self.copy_btn.setObjectName("urlSubmitBtn")
         self.copy_btn.setFixedWidth(100)
         self.copy_btn.setEnabled(False)
@@ -420,19 +420,19 @@ class MainWindow(QMainWindow):
 
     def _hotkey_hint(self) -> str:
         if self._recording_mode == RecordingMode.VOICE_DETECTION:
-            return "VAD listening"
-        return f"hold {self._current_ptt_key.upper()}"
+            return t("hotkey_hint_vad")
+        return t("hotkey_hint_ptt", key=self._current_ptt_key.upper())
 
     def _set_state(self, state: AppState) -> None:
         self.status_bar.set_state(state, self._hotkey_hint())
 
     def _update_empty_hint(self) -> None:
         if self._source_mode == SourceMode.URL:
-            hint = "Paste a video URL and press GO."
+            hint = t("hint_url_mode")
         elif self._recording_mode == RecordingMode.VOICE_DETECTION:
-            hint = "Auto-listening. Just start speaking."
+            hint = t("hint_vad_mode")
         else:
-            hint = f"Hold {self._current_ptt_key.upper()} to speak."
+            hint = t("hint_ptt_mode", ptt_key=self._current_ptt_key.upper())
         self.transcript_view.set_empty_hint(hint)
 
     # ============================================================
@@ -448,12 +448,14 @@ class MainWindow(QMainWindow):
         self.model_loader.start()
 
     def _on_model_progress(self, message: str, progress: float) -> None:
-        self.status_bar.show_transient(f"{message} ({int(progress * 100)}%)", 10_000)
+        self.status_bar.show_transient(
+            t("model_loading_progress", message=message, progress=int(progress * 100)), 10_000
+        )
 
     def _on_model_loaded(self, success: bool) -> None:
         if not success:
             self._set_state(AppState.ERROR)
-            self.status_bar.show_transient("Model load failed", 5_000)
+            self.status_bar.show_transient(t("error_model_load"), 5_000)
             return
         self._set_state(AppState.READY)
         self.stats_strip.set_model_status(None, True)
@@ -526,7 +528,7 @@ class MainWindow(QMainWindow):
         self.stats_strip.record_transcription(text, self._last_audio_duration_s, processing_time)
 
         # Toast & history
-        self.status_bar.show_transient(f"Done in {processing_time:.2f}s", 2200)
+        self.status_bar.show_transient(t("msg_done", processing_time=processing_time), 2200)
         if self._history_enabled:
             transcription_history.add(text, processing_time)
         voice_notes.add_note(text)
@@ -537,9 +539,9 @@ class MainWindow(QMainWindow):
 
     def _auto_type_text(self, text: str) -> None:
         if type_text(text, use_clipboard=True):
-            self.status_bar.show_transient("Text inserted", 1800)
+            self.status_bar.show_transient(t("action_text_inserted"), 1800)
         else:
-            self.status_bar.show_transient("Auto-type failed — use Copy", 3000)
+            self.status_bar.show_transient(t("action_autotype_failed"), 3000)
 
     def _on_transcription_finished(self) -> None:
         self._set_state(AppState.READY)
@@ -605,14 +607,21 @@ class MainWindow(QMainWindow):
         confidence: float,
         audio_duration_s: float,
         processing_time: float,
+        segments: object,
     ) -> None:
         self._last_transcription = text
-        self.transcript_view.set_result(text, lang or None, confidence or None)
+        segs = tuple(segments) if segments else ()
+        self.transcript_view.set_result(
+            text,
+            lang or None,
+            confidence or None,
+            segments=segs or None,
+        )
         self.copy_btn.setEnabled(bool(text))
 
         self.stats_strip.record_transcription(text, audio_duration_s, processing_time)
         self.status_bar.show_transient(
-            f"Transcribed in {processing_time:.1f}s · {audio_duration_s:.0f}s audio",
+            t("msg_transcribed", time=processing_time, duration=audio_duration_s),
             3000,
         )
         if self._history_enabled and text:
@@ -624,7 +633,7 @@ class MainWindow(QMainWindow):
         notes_path = Path(path)
         self._last_notes_path = notes_path
         self.open_folder_btn.setEnabled(True)
-        self.status_bar.show_transient(f"Notes saved · {notes_path.name}", 3200)
+        self.status_bar.show_transient(t("msg_notes_saved", filename=notes_path.name), 3200)
 
     def _open_last_notes_folder(self) -> None:
         """Ouvre l'explorateur Windows et sélectionne le dernier fichier exporté."""
@@ -638,7 +647,7 @@ class MainWindow(QMainWindow):
                 shell=False,
             )
         except OSError as e:
-            logger.warning("Impossible d'ouvrir l'explorateur : %s", e)
+            logger.warning(t("msg_cannot_open_explorer", error=str(e)))
 
     def _on_url_error(self, message: str) -> None:
         self.transcript_view.set_error(message)
@@ -657,7 +666,7 @@ class MainWindow(QMainWindow):
     def _copy_transcription(self) -> None:
         text = self.transcript_view.current_text() or self._last_transcription
         if text and copy_to_clipboard(text):
-            self.status_bar.show_transient("Copied to clipboard", 1800)
+            self.status_bar.show_transient(t("action_copied"), 1800)
 
     def _on_retry_requested(self) -> None:
         # Si mode URL : resoumettre l'URL courante avec les options courantes.
@@ -687,8 +696,12 @@ class MainWindow(QMainWindow):
                 self.audio_worker.stop_vad()
 
         self._set_state(AppState.READY)
-        mode_name = "Auto (VAD)" if self._recording_mode == RecordingMode.VOICE_DETECTION else "Hold"
-        self.status_bar.show_transient(f"Recording mode: {mode_name}", 1800)
+        mode_name = (
+            t("recording_mode_auto")
+            if self._recording_mode == RecordingMode.VOICE_DETECTION
+            else t("recording_mode_hold")
+        )
+        self.status_bar.show_transient(t("menu_recording_mode", mode=mode_name), 1800)
 
     def _open_key_config(self) -> None:
         if self.status_bar.state == AppState.RECORDING:
@@ -712,7 +725,7 @@ class MainWindow(QMainWindow):
         )
         set_ptt_key(new_key)
         self._update_empty_hint()
-        self.status_bar.show_transient(f"Hotkey: {new_key.upper()}", 2000)
+        self.status_bar.show_transient(t("recording_mode_hotkey", key=new_key.upper()), 2000)
         logger.info("PTT key changed: %s -> %s", old_key, new_key)
         QTimer.singleShot(2000, lambda: self._set_state(AppState.READY))
 
@@ -728,8 +741,8 @@ class MainWindow(QMainWindow):
         self.move(pos)
 
         self.menu_btn.set_floating(self._is_floating)
-        mode_name = "Floating" if self._is_floating else "Normal"
-        self.status_bar.show_transient(f"Window: {mode_name}", 1800)
+        mode_name = t("window_mode_floating") if self._is_floating else t("window_mode_normal")
+        self.status_bar.show_transient(t("menu_window_mode", mode=mode_name), 1800)
 
     # ============================================================
     # Errors
@@ -745,7 +758,7 @@ class MainWindow(QMainWindow):
     # ============================================================
 
     def closeEvent(self, event) -> None:  # noqa: N802
-        logger.info("Closing WhisperFlow...")
+        logger.info(t("msg_closing"))
 
         # Persist window geometry
         pos = self.pos()

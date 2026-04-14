@@ -12,6 +12,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPaintEvent
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from ...i18n import t
 from ...transcription_service import TranscriptionService
 from .. import theme
 
@@ -86,7 +87,7 @@ class GpuGauge(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(theme.SPACE_1)
 
-        self._eyebrow = QLabel("GPU")
+        self._eyebrow = QLabel(t("metrics_gpu"))
         self._eyebrow.setObjectName("eyebrow")
         root.addWidget(self._eyebrow)
 
@@ -113,7 +114,7 @@ class GpuGauge(QWidget):
         if total <= 0:
             self._value.setText("N/A")
             self._bar.set_ratio(0.0)
-            self._percent.setText("No CUDA device")
+            self._percent.setText(t("gpu_no_cuda"))
             self._has_gpu = False
             return
 
@@ -121,5 +122,5 @@ class GpuGauge(QWidget):
         self._value.setText(f"{used:.1f} / {total:.1f} GB")
         ratio = used / total
         self._bar.set_ratio(ratio)
-        status = " LIVE" if ratio > 0.01 else " IDLE"
+        status = f" {t('gpu_status_live')}" if ratio > 0.01 else f" {t('gpu_status_idle')}"
         self._percent.setText(f"{pct:.0f}%{status}")

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
+from ...i18n import t
 from .. import theme
 from .gpu_gauge import GpuGauge
 
@@ -104,7 +105,7 @@ class StatsStrip(QWidget):
         root.setSpacing(theme.SPACE_2)
 
         # Eyebrow section header
-        header = QLabel("METRICS")
+        header = QLabel(t("metrics_eyebrow"))
         header.setObjectName("sectionHeader")
         root.addWidget(header)
 
@@ -118,15 +119,17 @@ class StatsStrip(QWidget):
         row.addWidget(self._gpu_card, 1)
 
         # 2. Model card
-        self._model_card = _MetricCard("MODEL")
+        self._model_card = _MetricCard(t("metrics_model"))
         self._model_card.set_value("turbo")
-        self._model_card.set_hints("RTF —", "—")
+        self._model_card.set_hints(t("metrics_rtf_initial"), "—")
         row.addWidget(self._model_card, 1)
 
         # 3. Session card
-        self._session_card = _MetricCard("SESSION")
-        self._session_card.set_value("0 clips")
-        self._session_card.set_hints("0 words", "~0 min saved")
+        self._session_card = _MetricCard(t("metrics_session"))
+        self._session_card.set_value(t("metrics_session_initial"))
+        self._session_card.set_hints(
+            t("metrics_session_words", total_words=0), t("metrics_session_time_saved", time_saved=0)
+        )
         row.addWidget(self._session_card, 1)
 
         root.addLayout(row)
@@ -142,8 +145,8 @@ class StatsStrip(QWidget):
         self._model_card.set_value(label)
 
     def set_model_status(self, rtf: float | None, is_live: bool) -> None:
-        rtf_text = f"RTF {rtf:.3f}" if rtf is not None and rtf > 0 else "RTF —"
-        state = " LIVE" if is_live else " IDLE"
+        rtf_text = t("metrics_rtf_value", rtf=rtf) if rtf is not None and rtf > 0 else t("metrics_rtf_initial")
+        state = f" {t('metrics_model_state_live')}" if is_live else f" {t('metrics_model_state_idle')}"
         self._model_card.set_hints(rtf_text, state)
 
     def record_transcription(self, text: str, audio_duration_s: float, processing_time_s: float) -> None:
@@ -157,11 +160,11 @@ class StatsStrip(QWidget):
 
     def _refresh_session(self) -> None:
         s = self._session
-        self._session_card.set_value(f"{s.clips} clip{'s' if s.clips != 1 else ''}")
-        words_fmt = f"{s.total_words:,}".replace(",", " ")
+        clips_key = "metrics_session_clips_one" if s.clips == 1 else "metrics_session_clips_many"
+        self._session_card.set_value(t(clips_key, n=s.clips))
         self._session_card.set_hints(
-            f"{words_fmt} words",
-            f"~{s.time_saved_min:.0f} min saved",
+            t("metrics_session_words", total_words=s.total_words),
+            t("metrics_session_time_saved", time_saved=s.time_saved_min),
         )
 
 

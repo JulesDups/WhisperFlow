@@ -14,6 +14,7 @@ import numpy as np
 from PyQt6.QtCore import QMutex, QThread, QWaitCondition, pyqtSignal
 
 from ..audio_engine import AudioEngine
+from ..i18n import t
 from ..sources import VideoSource
 from ..transcription_service import TranscriptionService
 from ..utils.url_notes import UrlNotesMetadata, write_url_notes
@@ -126,7 +127,7 @@ class TranscriptionWorker(QThread):
 
             # Transcrit
             self.started.emit()
-            self.progress.emit("Transcription en cours...")
+            self.progress.emit(t("worker_transcribing"))
 
             try:
                 result = self.service.transcribe(audio, sr)
@@ -134,7 +135,7 @@ class TranscriptionWorker(QThread):
                 if result:
                     self.result.emit(result.text, result.processing_time)
                 else:
-                    self.error.emit("Échec de la transcription")
+                    self.error.emit(t("worker_transcription_failed"))
 
             except Exception as e:
                 self.error.emit(str(e))
@@ -157,7 +158,7 @@ class TranscriptionWorker(QThread):
             self._mutex.unlock()
         # Attend max 2 secondes
         if not self.wait(2000):
-            logger.warning("TranscriptionWorker: timeout, termine de force")
+            logger.warning(t("worker_timeout"))
             self.terminate()
             self.wait(500)
 
@@ -228,7 +229,7 @@ class AudioRecorderWorker(QThread):
             if self.engine.start_recording():
                 self.recording_started.emit()
             else:
-                self.error.emit("Impossible de démarrer l'enregistrement")
+                self.error.emit(t("worker_audio_error"))
         elif not should_record and self.engine.is_recording:
             chunk = self.engine.stop_recording()
             self.recording_stopped.emit()
@@ -358,7 +359,8 @@ class UrlTranscriptionWorker(QThread):
     dl_progress = pyqtSignal(str, float)
     transcribe_progress = pyqtSignal(str)
     metadata = pyqtSignal(str, float)  # title, duration_s
-    result = pyqtSignal(str, str, float, float, float)  # text, lang, conf, audio_dur, proc_time
+    # text, lang, conf, audio_dur, proc_time, segments (tuple[TranscriptSegment, ...])
+    result = pyqtSignal(str, str, float, float, float, object)
     notes_saved = pyqtSignal(str)
     error = pyqtSignal(str)
     finished = pyqtSignal()
@@ -433,7 +435,7 @@ class UrlTranscriptionWorker(QThread):
         # Étape 1 — métadonnées (rapide, utile pour feedback immédiat)
         meta = source.fetch_metadata(url)
         if self._cancel:
-            self.error.emit("Annulé par l'utilisateur")
+            self.error.emit(t("error_cancelled"))
             return
         video_title = meta.title if meta is not None else "Untitled"
         if meta is not None:
@@ -442,14 +444,14 @@ class UrlTranscriptionWorker(QThread):
         # Étape 2 — DL + extraction audio (0→75% de dl_progress)
         download_result = source.download_and_extract_audio(url)
         if self._cancel:
-            self.error.emit("Annulé par l'utilisateur")
+            self.error.emit(t("error_cancelled"))
             return
         if download_result is None:
-            self.error.emit("Impossible de télécharger ou décoder la vidéo")
+            self.error.emit(t("error_download_failed"))
             return
 
         # Étape 3 — transcription (segments timestampés pour l'export)
-        self.transcribe_progress.emit("Transcription en cours…")
+        self.transcribe_progress.emit(t("worker_transcribing"))
         try:
             tr = self.service.transcribe(
                 download_result.audio_data,
@@ -458,18 +460,18 @@ class UrlTranscriptionWorker(QThread):
                 with_segments=True,
             )
         except (RuntimeError, ValueError) as e:
-            self.error.emit(f"Échec de la transcription : {e}")
+            self.error.emit(t("error_transcription_detail", error=e))
             return
 
         if tr is None:
-            self.error.emit("Transcription vide")
+            self.error.emit(t("error_transcription_empty"))
             return
 
         audio_dur = len(download_result.audio_data) / float(download_result.sample_rate)
         lang = tr.language or ""
         conf = tr.confidence if tr.confidence is not None else 0.0
 
-        self.result.emit(tr.text, lang, conf, audio_dur, tr.processing_time)
+        self.result.emit(tr.text, lang, conf, audio_dur, tr.processing_time, tr.segments or ())
 
         # Étape 4 — export notes horodatées (txt ou json)
         try:

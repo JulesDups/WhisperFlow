@@ -13,6 +13,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QPainter, QPaintEvent
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
+from ...i18n import t
 from .. import theme
 
 
@@ -130,7 +131,7 @@ class StatusBar(QWidget):
         self._indicator = _Indicator(self)
         root.addWidget(self._indicator, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        self._label = QLabel("Loading model…")
+        self._label = QLabel(t("status_loading"))
         self._label.setObjectName("statusBarLabel")
         self._label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         root.addWidget(self._label, 1)
@@ -160,15 +161,15 @@ class StatusBar(QWidget):
 
     def _default_text(self, state: AppState, hotkey_hint: str) -> str:
         if state == AppState.LOADING:
-            return "Loading model…"
+            return t("status_loading")
         if state == AppState.READY:
-            return f"Ready — {hotkey_hint}" if hotkey_hint else "Ready"
+            return t("status_ready_hotkey", hotkey_hint=hotkey_hint) if hotkey_hint else t("status_ready")
         if state == AppState.RECORDING:
-            return "Recording"
+            return t("status_recording")
         if state == AppState.PROCESSING:
-            return "Transcribing…"
+            return t("status_transcribing")
         if state == AppState.ERROR:
-            return "Error"
+            return t("status_error")
         return ""
 
     @property

@@ -443,6 +443,40 @@ def get_main_stylesheet() -> str:
         height: 0;
     }}
 
+    /* Render toggle (TEXT / TIMED) inside the transcript header */
+    QPushButton#renderToggleBtn {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT_DIM};
+        border: 1px solid {theme.BORDER};
+        padding: 4px 10px;
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }}
+
+    QPushButton#renderToggleBtn[segment="left"] {{
+        border-top-left-radius: {theme.RADIUS_SM}px;
+        border-bottom-left-radius: {theme.RADIUS_SM}px;
+        border-right: none;
+    }}
+
+    QPushButton#renderToggleBtn[segment="right"] {{
+        border-top-right-radius: {theme.RADIUS_SM}px;
+        border-bottom-right-radius: {theme.RADIUS_SM}px;
+    }}
+
+    QPushButton#renderToggleBtn:hover {{
+        color: {theme.TEXT};
+        background-color: {theme.BG_HOVER};
+    }}
+
+    QPushButton#renderToggleBtn:checked {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+        border-color: {theme.INK};
+    }}
+
     #langBadge {{
         background-color: {theme.ACCENT_SOFT};
         color: {theme.INK};

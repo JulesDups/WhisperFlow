@@ -26,12 +26,13 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ...i18n import t
 from .. import theme
 
 _LANG_OPTIONS: list[tuple[str, str]] = [
-    ("auto", "Auto-detect"),
-    ("fr", "Français"),
-    ("en", "English"),
+    ("auto", "url_lang_auto"),
+    ("fr", "url_lang_fr"),
+    ("en", "url_lang_en"),
 ]
 
 
@@ -76,21 +77,21 @@ class UrlPanel(QWidget):
 
         self._lang_combo = QComboBox()
         self._lang_combo.setObjectName("urlLangCombo")
-        for code, label in _LANG_OPTIONS:
-            self._lang_combo.addItem(label, code)
+        for code, key in _LANG_OPTIONS:
+            self._lang_combo.addItem(t(key), code)
         self._set_combo_to_language(self._language)
         self._lang_combo.currentIndexChanged.connect(self._on_lang_changed)
         options.addWidget(self._lang_combo, 0)
 
         # Format toggle (segmented pair)
-        self._btn_fmt_txt = QPushButton("TXT")
+        self._btn_fmt_txt = QPushButton(t("url_format_txt"))
         self._btn_fmt_txt.setObjectName("formatToggleBtn")
         self._btn_fmt_txt.setProperty("segment", "left")
         self._btn_fmt_txt.setCheckable(True)
         self._btn_fmt_txt.clicked.connect(lambda: self._set_format("txt"))
         options.addWidget(self._btn_fmt_txt, 0)
 
-        self._btn_fmt_json = QPushButton("JSON")
+        self._btn_fmt_json = QPushButton(t("url_format_json"))
         self._btn_fmt_json.setObjectName("formatToggleBtn")
         self._btn_fmt_json.setProperty("segment", "right")
         self._btn_fmt_json.setCheckable(True)
@@ -107,12 +108,12 @@ class UrlPanel(QWidget):
 
         self._input = QLineEdit()
         self._input.setObjectName("urlInput")
-        self._input.setPlaceholderText("https://youtube.com/watch?v=…")
+        self._input.setPlaceholderText(t("url_placeholder"))
         self._input.setClearButtonEnabled(True)
         self._input.returnPressed.connect(self._on_submit)
         row.addWidget(self._input, 1)
 
-        self._btn = QPushButton("GO")
+        self._btn = QPushButton(t("btn_go"))
         self._btn.setObjectName("urlSubmitBtn")
         self._btn.setFixedWidth(70)
         self._btn.clicked.connect(self._on_submit)
@@ -156,7 +157,7 @@ class UrlPanel(QWidget):
         self._lang_combo.setEnabled(not busy)
         self._btn_fmt_txt.setEnabled(not busy)
         self._btn_fmt_json.setEnabled(not busy)
-        self._btn.setText("STOP" if busy else "GO")
+        self._btn.setText(t("btn_stop") if busy else t("btn_go"))
         self._btn.setProperty("busy", busy)
         self._btn.style().unpolish(self._btn)
         self._btn.style().polish(self._btn)
@@ -164,7 +165,7 @@ class UrlPanel(QWidget):
             self._progress.show()
             self._progress_label.show()
             self._progress.setValue(0)
-            self._progress_label.setText("Fetching…")
+            self._progress_label.setText(t("url_fetching"))
         else:
             self._progress.hide()
             self._progress_label.hide()
