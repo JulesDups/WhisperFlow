@@ -1,14 +1,22 @@
 """
-UrlPanel — input URL + bouton submit + progress overlay.
+UrlPanel — input URL + options (langue, format notes) + progress overlay.
 
-Affiche aussi les métadonnées de la vidéo en cours (titre, durée) une fois
-récupérées, et la progression DL → extraction → transcription.
+Layout :
+    [Lang ▼] [TXT | JSON]                               (options row)
+    [https://youtube.com/...                ] [GO/STOP] (input row)
+    Title · mm:ss                                        (meta)
+    ▇▇▇▇░░░░░░░░░░ Downloading 45%                      (progress)
+
+Les options (langue, format) ne s'appliquent qu'au chemin URL ; le chemin
+mic utilise ses propres réglages. L'état initial est restauré depuis les
+settings utilisateur via le constructeur `UrlPanel(initial_language, initial_format)`.
 """
 
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -20,23 +28,40 @@ from PyQt6.QtWidgets import (
 
 from .. import theme
 
+_LANG_OPTIONS: list[tuple[str, str]] = [
+    ("auto", "Auto-detect"),
+    ("fr", "Français"),
+    ("en", "English"),
+]
+
 
 class UrlPanel(QWidget):
     """
     Panel d'entrée URL vidéo.
 
     Signaux :
-      - url_submitted(str) : l'utilisateur a cliqué GO ou tapé Enter
-      - cancel_requested() : l'utilisateur veut annuler le job en cours
+      - url_submitted(str, str, str) : (url, language_code, notes_format)
+      - cancel_requested() : annulation du job en cours
+      - language_changed(str) : langue sélectionnée (pour persistence)
+      - notes_format_changed(str) : format sélectionné (pour persistence)
     """
 
-    url_submitted = pyqtSignal(str)
+    url_submitted = pyqtSignal(str, str, str)
     cancel_requested = pyqtSignal()
+    language_changed = pyqtSignal(str)
+    notes_format_changed = pyqtSignal(str)
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        initial_language: str = "auto",
+        initial_format: str = "json",
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("urlPanel")
         self._busy = False
+        self._language = initial_language if initial_language in {"auto", "fr", "en"} else "auto"
+        self._format = initial_format if initial_format in {"txt", "json"} else "json"
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -44,7 +69,38 @@ class UrlPanel(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(theme.SPACE_2)
 
-        # Input row
+        # --- Options row (lang + format) ---
+        options = QHBoxLayout()
+        options.setContentsMargins(0, 0, 0, 0)
+        options.setSpacing(theme.SPACE_2)
+
+        self._lang_combo = QComboBox()
+        self._lang_combo.setObjectName("urlLangCombo")
+        for code, label in _LANG_OPTIONS:
+            self._lang_combo.addItem(label, code)
+        self._set_combo_to_language(self._language)
+        self._lang_combo.currentIndexChanged.connect(self._on_lang_changed)
+        options.addWidget(self._lang_combo, 0)
+
+        # Format toggle (segmented pair)
+        self._btn_fmt_txt = QPushButton("TXT")
+        self._btn_fmt_txt.setObjectName("formatToggleBtn")
+        self._btn_fmt_txt.setProperty("segment", "left")
+        self._btn_fmt_txt.setCheckable(True)
+        self._btn_fmt_txt.clicked.connect(lambda: self._set_format("txt"))
+        options.addWidget(self._btn_fmt_txt, 0)
+
+        self._btn_fmt_json = QPushButton("JSON")
+        self._btn_fmt_json.setObjectName("formatToggleBtn")
+        self._btn_fmt_json.setProperty("segment", "right")
+        self._btn_fmt_json.setCheckable(True)
+        self._btn_fmt_json.clicked.connect(lambda: self._set_format("json"))
+        options.addWidget(self._btn_fmt_json, 0)
+
+        options.addStretch()
+        root.addLayout(options)
+
+        # --- Input row ---
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(theme.SPACE_2)
@@ -58,20 +114,20 @@ class UrlPanel(QWidget):
 
         self._btn = QPushButton("GO")
         self._btn.setObjectName("urlSubmitBtn")
-        self._btn.setFixedWidth(60)
+        self._btn.setFixedWidth(70)
         self._btn.clicked.connect(self._on_submit)
         row.addWidget(self._btn, 0)
 
         root.addLayout(row)
 
-        # Meta line (hidden until metadata available)
+        # --- Meta line (hidden until metadata available) ---
         self._meta = QLabel("")
         self._meta.setObjectName("urlMeta")
         self._meta.setWordWrap(True)
         self._meta.hide()
         root.addWidget(self._meta)
 
-        # Progress bar + status
+        # --- Progress bar + status ---
         self._progress = QProgressBar()
         self._progress.setObjectName("urlProgress")
         self._progress.setRange(0, 100)
@@ -86,15 +142,20 @@ class UrlPanel(QWidget):
         self._progress_label.hide()
         root.addWidget(self._progress_label)
 
+        # Initial state of the format buttons
+        self._apply_format_state()
+
     # ---- API ----
 
     def set_visible_mode(self, visible: bool) -> None:
-        """Affiche/masque le panel selon le mode source actif."""
         self.setVisible(visible)
 
     def set_busy(self, busy: bool) -> None:
         self._busy = busy
         self._input.setEnabled(not busy)
+        self._lang_combo.setEnabled(not busy)
+        self._btn_fmt_txt.setEnabled(not busy)
+        self._btn_fmt_json.setEnabled(not busy)
         self._btn.setText("STOP" if busy else "GO")
         self._btn.setProperty("busy", busy)
         self._btn.style().unpolish(self._btn)
@@ -128,7 +189,44 @@ class UrlPanel(QWidget):
     def clear_input(self) -> None:
         self._input.clear()
 
-    # ---- events ----
+    @property
+    def language(self) -> str:
+        return self._language
+
+    @property
+    def notes_format(self) -> str:
+        return self._format
+
+    # ---- internals ----
+
+    def _set_combo_to_language(self, code: str) -> None:
+        for i in range(self._lang_combo.count()):
+            if self._lang_combo.itemData(i) == code:
+                self._lang_combo.setCurrentIndex(i)
+                return
+
+    def _on_lang_changed(self, index: int) -> None:
+        code = self._lang_combo.itemData(index)
+        if code and code != self._language:
+            self._language = code
+            self.language_changed.emit(code)
+
+    def _set_format(self, fmt: str) -> None:
+        if fmt not in ("txt", "json"):
+            return
+        if fmt == self._format:
+            self._apply_format_state()
+            return
+        self._format = fmt
+        self._apply_format_state()
+        self.notes_format_changed.emit(fmt)
+
+    def _apply_format_state(self) -> None:
+        self._btn_fmt_txt.setChecked(self._format == "txt")
+        self._btn_fmt_json.setChecked(self._format == "json")
+        for btn in (self._btn_fmt_txt, self._btn_fmt_json):
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
 
     def _on_submit(self) -> None:
         if self._busy:
@@ -137,4 +235,4 @@ class UrlPanel(QWidget):
         url = self.current_url()
         if not url:
             return
-        self.url_submitted.emit(url)
+        self.url_submitted.emit(url, self._language, self._format)

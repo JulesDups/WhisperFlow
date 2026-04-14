@@ -43,7 +43,11 @@ class UserSettings:
 
     # Taille de la fenêtre (en mode resizable)
     window_width: int = 480
-    window_height: int = 580
+    window_height: int = 680
+
+    # URL feature — langue cible et format d'export des notes
+    url_language: str = "auto"  # "auto", "fr", "en"
+    url_notes_format: str = "json"  # "txt" ou "json"
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserSettings:
@@ -93,9 +97,19 @@ class UserSettings:
         except (TypeError, ValueError):
             window_width = 480
         try:
-            window_height = max(480, min(2000, int(data.get("window_height", 580))))
+            window_height = max(640, min(2000, int(data.get("window_height", 680))))
         except (TypeError, ValueError):
-            window_height = 580
+            window_height = 680
+
+        # URL language — whitelisted
+        url_language = str(data.get("url_language", "auto"))[:10]
+        if url_language not in ("auto", "fr", "en"):
+            url_language = "auto"
+
+        # URL notes format
+        url_notes_format = str(data.get("url_notes_format", "json"))[:10]
+        if url_notes_format not in ("txt", "json"):
+            url_notes_format = "json"
 
         return cls(
             push_to_talk_key=ptt_key,
@@ -110,6 +124,8 @@ class UserSettings:
             source_mode=source_mode,
             window_width=window_width,
             window_height=window_height,
+            url_language=url_language,
+            url_notes_format=url_notes_format,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -361,3 +377,25 @@ def set_window_size(width: int, height: int) -> None:
     """Sauvegarde la taille de la fenêtre."""
     settings_manager.set("window_width", int(width), save=False)
     settings_manager.set("window_height", int(height))
+
+
+def get_url_language() -> str:
+    """Langue cible pour les transcriptions URL ('auto', 'fr', 'en')."""
+    return settings_manager.get("url_language", "auto")
+
+
+def set_url_language(language: str) -> None:
+    """Définit la langue cible URL (whitelist)."""
+    if language in ("auto", "fr", "en"):
+        settings_manager.set("url_language", language)
+
+
+def get_url_notes_format() -> str:
+    """Format d'export des notes URL ('txt' ou 'json')."""
+    return settings_manager.get("url_notes_format", "json")
+
+
+def set_url_notes_format(fmt: str) -> None:
+    """Définit le format d'export des notes URL."""
+    if fmt in ("txt", "json"):
+        settings_manager.set("url_notes_format", fmt)

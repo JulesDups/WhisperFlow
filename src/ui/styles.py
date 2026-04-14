@@ -220,6 +220,75 @@ def get_main_stylesheet() -> str:
         background-color: transparent;
     }}
 
+    /* URL options — language combo + format toggle */
+    QComboBox#urlLangCombo {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_SM}px;
+        padding: 6px 12px;
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        min-width: 120px;
+    }}
+
+    QComboBox#urlLangCombo:hover {{
+        border-color: {theme.BORDER_GOLD};
+    }}
+
+    QComboBox#urlLangCombo::drop-down {{
+        subcontrol-origin: padding;
+        subcontrol-position: center right;
+        width: 20px;
+        border: none;
+    }}
+
+    QComboBox#urlLangCombo QAbstractItemView {{
+        background-color: {theme.BG_ELEVATED};
+        border: 1px solid {theme.BORDER_STRONG};
+        border-radius: {theme.RADIUS_SM}px;
+        padding: 4px;
+        selection-background-color: {theme.INK};
+        selection-color: {theme.CREAM};
+        color: {theme.TEXT};
+        outline: 0;
+    }}
+
+    QPushButton#formatToggleBtn {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT_DIM};
+        border: 1px solid {theme.BORDER};
+        padding: 6px 14px;
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }}
+
+    QPushButton#formatToggleBtn[segment="left"] {{
+        border-top-left-radius: {theme.RADIUS_SM}px;
+        border-bottom-left-radius: {theme.RADIUS_SM}px;
+        border-right: none;
+    }}
+
+    QPushButton#formatToggleBtn[segment="right"] {{
+        border-top-right-radius: {theme.RADIUS_SM}px;
+        border-bottom-right-radius: {theme.RADIUS_SM}px;
+    }}
+
+    QPushButton#formatToggleBtn:hover {{
+        color: {theme.TEXT};
+        background-color: {theme.BG_HOVER};
+    }}
+
+    QPushButton#formatToggleBtn:checked {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+        border-color: {theme.INK};
+    }}
+
     QLineEdit#urlInput {{
         background-color: {theme.BG_ELEVATED};
         color: {theme.TEXT};

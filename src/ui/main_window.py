@@ -51,12 +51,16 @@ from ..utils.settings import (
     get_ptt_key,
     get_recording_mode,
     get_source_mode,
+    get_url_language,
+    get_url_notes_format,
     get_window_mode,
     get_window_position,
     get_window_size,
     set_ptt_key,
     set_recording_mode,
     set_source_mode,
+    set_url_language,
+    set_url_notes_format,
     set_window_mode,
     set_window_position,
     set_window_size,
@@ -96,7 +100,7 @@ class _TitleBar(QWidget):
     def __init__(self, menu_button: MenuButton, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("titleBar")
-        self.setFixedHeight(48)
+        self.setFixedHeight(64)
         self._drag_position: QPoint | None = None
 
         root = QHBoxLayout(self)
@@ -105,7 +109,7 @@ class _TitleBar(QWidget):
 
         brand = QVBoxLayout()
         brand.setContentsMargins(0, 0, 0, 0)
-        brand.setSpacing(0)
+        brand.setSpacing(2)
 
         self._eyebrow = QLabel("DESKTOP · VOICE")
         self._eyebrow.setObjectName("brandEyebrow")
@@ -291,9 +295,14 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(self.source_toggle)
 
         # --- URL panel (visible seulement en mode URL) ---
-        self.url_panel = UrlPanel()
+        self.url_panel = UrlPanel(
+            initial_language=get_url_language(),
+            initial_format=get_url_notes_format(),
+        )
         self.url_panel.url_submitted.connect(self._on_url_submitted)
         self.url_panel.cancel_requested.connect(self._on_url_cancelled)
+        self.url_panel.language_changed.connect(set_url_language)
+        self.url_panel.notes_format_changed.connect(set_url_notes_format)
         self.url_panel.set_visible_mode(self._source_mode == SourceMode.URL)
         content_layout.addWidget(self.url_panel)
 
@@ -369,6 +378,7 @@ class MainWindow(QMainWindow):
         self.url_worker.transcribe_progress.connect(self._on_url_transcribe_progress)
         self.url_worker.metadata.connect(self._on_url_metadata)
         self.url_worker.result.connect(self._on_url_result)
+        self.url_worker.notes_saved.connect(self._on_url_notes_saved)
         self.url_worker.error.connect(self._on_url_error)
         self.url_worker.finished.connect(self._on_url_finished)
         self.url_worker.start()
@@ -552,14 +562,14 @@ class MainWindow(QMainWindow):
             ):
                 self.audio_worker.start_vad()
 
-    def _on_url_submitted(self, url: str) -> None:
+    def _on_url_submitted(self, url: str, language: str, notes_format: str) -> None:
         if self.url_worker is None:
             return
         self.url_panel.clear_metadata()
         self.url_panel.set_busy(True)
         self._set_state(AppState.PROCESSING)
         self.transcript_view.set_state(TranscriptState.EMPTY)
-        self.url_worker.submit_url(url)
+        self.url_worker.submit_url(url, language, notes_format)
 
     def _on_url_cancelled(self) -> None:
         if self.url_worker is not None:
@@ -598,6 +608,12 @@ class MainWindow(QMainWindow):
         if text:
             voice_notes.add_note(text)
 
+    def _on_url_notes_saved(self, path: str) -> None:
+        from pathlib import Path
+
+        filename = Path(path).name
+        self.status_bar.show_transient(f"Notes saved · {filename}", 3200)
+
     def _on_url_error(self, message: str) -> None:
         self.transcript_view.set_error(message)
         self.url_panel.set_busy(False)
@@ -618,11 +634,11 @@ class MainWindow(QMainWindow):
             self.status_bar.show_transient("Copied to clipboard", 1800)
 
     def _on_retry_requested(self) -> None:
-        # Si mode URL : resoumettre l'URL courante. Sinon : passer à l'empty state.
+        # Si mode URL : resoumettre l'URL courante avec les options courantes.
         if self._source_mode == SourceMode.URL:
             url = self.url_panel.current_url()
             if url:
-                self._on_url_submitted(url)
+                self._on_url_submitted(url, self.url_panel.language, self.url_panel.notes_format)
                 return
         self.transcript_view.set_state(TranscriptState.EMPTY)
         self._set_state(AppState.READY)

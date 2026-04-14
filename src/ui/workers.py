@@ -16,6 +16,7 @@ from PyQt6.QtCore import QMutex, QThread, QWaitCondition, pyqtSignal
 from ..audio_engine import AudioEngine
 from ..sources import VideoSource
 from ..transcription_service import TranscriptionService
+from ..utils.url_notes import UrlNotesMetadata, write_url_notes
 
 logger = logging.getLogger(__name__)
 
@@ -341,13 +342,15 @@ class AudioRecorderWorker(QThread):
 class UrlTranscriptionWorker(QThread):
     """
     Worker qui traite un job URL de bout en bout :
-    téléchargement vidéo → extraction audio → transcription Whisper.
+    téléchargement vidéo → extraction audio → transcription Whisper →
+    sauvegarde horodatée dans `notes/` (txt ou json, segments inclus).
 
     Émet des signaux de progression granulaires pour alimenter l'UI :
       - dl_progress(msg, ratio) : 0→0.75 (download + extraction)
       - transcribe_progress(msg) : état de la transcription
       - metadata(title, duration) : dès que fetch_metadata renvoie
       - result(text, lang, confidence, audio_duration, processing_time)
+      - notes_saved(path) : chemin du fichier exporté (relatif ou absolu)
       - error(msg)
       - finished()
     """
@@ -356,6 +359,7 @@ class UrlTranscriptionWorker(QThread):
     transcribe_progress = pyqtSignal(str)
     metadata = pyqtSignal(str, float)  # title, duration_s
     result = pyqtSignal(str, str, float, float, float)  # text, lang, conf, audio_dur, proc_time
+    notes_saved = pyqtSignal(str)
     error = pyqtSignal(str)
     finished = pyqtSignal()
 
@@ -363,17 +367,33 @@ class UrlTranscriptionWorker(QThread):
         super().__init__()
         self.service = transcription_service
         self._url: str = ""
+        self._language: str = "auto"
+        self._notes_format: str = "json"
         self._cancel = False
         self._mutex = QMutex()
         self._condition = QWaitCondition()
         self._has_task = False
         self._should_stop = False
 
-    def submit_url(self, url: str) -> None:
-        """Soumet une URL à traiter. Si un job est en cours, il est remplacé."""
+    def submit_url(
+        self,
+        url: str,
+        language: str = "auto",
+        notes_format: str = "json",
+    ) -> None:
+        """
+        Soumet une URL à traiter. Si un job est en cours, il est remplacé.
+
+        Args:
+            url: URL vidéo (YouTube, etc.)
+            language: 'auto', 'fr', 'en' — passé à Whisper
+            notes_format: 'txt' ou 'json' — format d'export
+        """
         self._mutex.lock()
         try:
             self._url = url
+            self._language = language if language in ("auto", "fr", "en") else "auto"
+            self._notes_format = notes_format if notes_format in ("txt", "json") else "json"
             self._cancel = False
             self._has_task = True
             self._condition.wakeOne()
@@ -393,6 +413,8 @@ class UrlTranscriptionWorker(QThread):
                 if self._should_stop:
                     break
                 url = self._url
+                language = self._language
+                notes_format = self._notes_format
                 self._has_task = False
                 self._cancel = False
             finally:
@@ -401,10 +423,10 @@ class UrlTranscriptionWorker(QThread):
             if not url:
                 continue
 
-            self._process_job(url)
+            self._process_job(url, language, notes_format)
             self.finished.emit()
 
-    def _process_job(self, url: str) -> None:
+    def _process_job(self, url: str, language: str, notes_format: str) -> None:
         source = VideoSource()
         source.set_progress_callback(lambda msg, pct: self.dl_progress.emit(msg, pct))
 
@@ -413,6 +435,7 @@ class UrlTranscriptionWorker(QThread):
         if self._cancel:
             self.error.emit("Annulé par l'utilisateur")
             return
+        video_title = meta.title if meta is not None else "Untitled"
         if meta is not None:
             self.metadata.emit(meta.title, meta.duration)
 
@@ -425,14 +448,14 @@ class UrlTranscriptionWorker(QThread):
             self.error.emit("Impossible de télécharger ou décoder la vidéo")
             return
 
-        # Étape 3 — transcription
+        # Étape 3 — transcription (segments timestampés pour l'export)
         self.transcribe_progress.emit("Transcription en cours…")
-        t0 = time.time()
         try:
             tr = self.service.transcribe(
                 download_result.audio_data,
                 download_result.sample_rate,
-                language="auto",
+                language=language,
+                with_segments=True,
             )
         except (RuntimeError, ValueError) as e:
             self.error.emit(f"Échec de la transcription : {e}")
@@ -442,12 +465,25 @@ class UrlTranscriptionWorker(QThread):
             self.error.emit("Transcription vide")
             return
 
-        processing_time = time.time() - t0
         audio_dur = len(download_result.audio_data) / float(download_result.sample_rate)
         lang = tr.language or ""
         conf = tr.confidence if tr.confidence is not None else 0.0
 
-        self.result.emit(tr.text, lang, conf, audio_dur, processing_time)
+        self.result.emit(tr.text, lang, conf, audio_dur, tr.processing_time)
+
+        # Étape 4 — export notes horodatées (txt ou json)
+        try:
+            notes_meta = UrlNotesMetadata(
+                video_title=video_title,
+                video_url=url,
+                model_id=self.service.model_id,
+                language_requested=language,
+            )
+            path = write_url_notes(tr, notes_meta, notes_format)
+            self.notes_saved.emit(str(path))
+        except OSError as e:
+            logger.warning("Impossible d'écrire les notes : %s", e)
+            # Non bloquant : le résultat est déjà remonté.
 
         # Libère l'audio explicitement
         del download_result

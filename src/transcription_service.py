@@ -48,6 +48,15 @@ except ImportError:
 
 
 @dataclass(slots=True, frozen=True)
+class TranscriptSegment:
+    """Segment horodaté d'une transcription (start/end en secondes)."""
+
+    start: float
+    end: float
+    text: str
+
+
+@dataclass(slots=True, frozen=True)
 class TranscriptionResult:
     """Résultat d'une transcription"""
 
@@ -57,6 +66,7 @@ class TranscriptionResult:
     processing_time: float  # Temps de traitement
     detected_language: str | None = None  # Langue détectée si auto
     confidence: float | None = None
+    segments: tuple[TranscriptSegment, ...] | None = None  # Rempli si with_segments=True
 
 
 # Patterns d'hallucination pré-compilés pour performance
@@ -214,7 +224,11 @@ class TranscriptionService:
             logger.info("Modele decharge, memoire liberee")
 
     def transcribe(
-        self, audio_data: NDArray[np.float32], sample_rate: int = 16000, language: str | None = None
+        self,
+        audio_data: NDArray[np.float32],
+        sample_rate: int = 16000,
+        language: str | None = None,
+        with_segments: bool = False,
     ) -> TranscriptionResult | None:
         """
         Transcrit un segment audio avec Faster-Whisper.
@@ -223,6 +237,9 @@ class TranscriptionService:
             audio_data: Array numpy de l'audio (float32, -1 à 1)
             sample_rate: Fréquence d'échantillonnage
             language: Code langue (fr, en, etc.), "auto" pour détection, None utilise config
+            with_segments: si True, retourne chaque segment horodaté
+                (TranscriptSegment) dans TranscriptionResult.segments.
+                Active `without_timestamps=False` côté Whisper.
 
         Returns:
             TranscriptionResult ou None en cas d'erreur
@@ -249,7 +266,8 @@ class TranscriptionService:
                     "min_speech_duration_ms": 250,
                     "min_silence_duration_ms": 500,
                 },
-                "without_timestamps": True,  # Plus rapide sans timestamps
+                # Segments horodatés : coût CPU minime, utile pour l'export notes.
+                "without_timestamps": not with_segments,
             }
 
             # Si pas auto-détection, spécifie la langue
@@ -257,12 +275,22 @@ class TranscriptionService:
                 transcribe_kwargs["language"] = use_language
 
             # Exécute la transcription
-            segments, info = self._model.transcribe(audio_data, **transcribe_kwargs)
+            whisper_segments, info = self._model.transcribe(audio_data, **transcribe_kwargs)
 
-            # Collecte tous les segments en une seule chaîne
-            text_parts = []
-            for segment in segments:
-                text_parts.append(segment.text.strip())
+            # Collecte texte (+ segments timestampés si demandés)
+            text_parts: list[str] = []
+            segment_tuples: list[TranscriptSegment] = []
+            for segment in whisper_segments:
+                piece = segment.text.strip()
+                text_parts.append(piece)
+                if with_segments:
+                    segment_tuples.append(
+                        TranscriptSegment(
+                            start=float(segment.start),
+                            end=float(segment.end),
+                            text=piece,
+                        )
+                    )
 
             text = " ".join(text_parts).strip()
 
@@ -288,6 +316,7 @@ class TranscriptionService:
                 processing_time=processing_time,
                 detected_language=detected_lang,
                 confidence=confidence,
+                segments=tuple(segment_tuples) if with_segments else None,
             )
 
         except (RuntimeError, ValueError) as e:
