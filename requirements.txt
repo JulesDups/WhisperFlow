@@ -27,6 +27,13 @@ pynput>=1.7.6
 pyperclip>=1.8.2
 
 # ============================================
+# Video / URL source (download + audio extraction)
+# imageio-ffmpeg bundles the ffmpeg binary inside the venv (no global install)
+# ============================================
+yt-dlp>=2025.1.0
+imageio-ffmpeg>=0.5.1
+
+# ============================================
 # Utilities
 # ============================================
 colorama>=0.4.6

@@ -22,6 +22,13 @@ class WindowMode(StrEnum):
     NORMAL = "normal"
 
 
+class RecordingMode(StrEnum):
+    """Modes d'enregistrement"""
+
+    PUSH_TO_TALK = "push_to_talk"
+    VOICE_DETECTION = "voice_detection"
+
+
 @dataclass
 class AppConfig:
     """Configuration générale de l'application"""
@@ -81,6 +88,23 @@ class HotkeyConfig:
 
 
 @dataclass
+class VideoSourceConfig:
+    """Configuration de la source vidéo (téléchargement + extraction audio)"""
+
+    # Dossier de téléchargement temporaire (dans .cache/)
+    DOWNLOADS_DIR: Path = Path(__file__).parent.parent / ".cache" / "downloads"
+
+    # Conserver les fichiers téléchargés après transcription
+    KEEP_DOWNLOADED_FILES: bool = False
+
+    # Durée max acceptée (sécurité pour éviter les vidéos énormes)
+    MAX_DURATION_S: float = 3600.0  # 1 heure
+
+    # Format de téléchargement yt-dlp (bestaudio = piste audio seule, plus rapide)
+    YTDLP_FORMAT: str = "bestaudio/best"
+
+
+@dataclass
 class UIConfig:
     """Configuration de l'interface utilisateur"""
 
@@ -111,8 +135,10 @@ app_config = AppConfig()
 audio_config = AudioConfig()
 model_config = ModelConfig()
 hotkey_config = HotkeyConfig()
+video_source_config = VideoSourceConfig()
 ui_config = UIConfig()
 
 # Création des répertoires cache si nécessaire
 app_config.CACHE_DIR.mkdir(exist_ok=True)
 app_config.MODELS_DIR.mkdir(exist_ok=True)
+video_source_config.DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)

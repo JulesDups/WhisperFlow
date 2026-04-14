@@ -362,7 +362,12 @@ class TranscriptionService:
     @staticmethod
     def get_vram_usage() -> tuple[float, float, float]:
         """
-        Retourne l'utilisation VRAM actuelle.
+        Retourne l'utilisation VRAM actuelle sur le device 0.
+
+        Utilise `torch.cuda.mem_get_info` (cuMemGetInfo du driver) plutôt que
+        `memory_allocated`, car faster-whisper/ctranslate2 alloue *en dehors*
+        de l'allocateur PyTorch. mem_get_info voit toute la VRAM utilisée par
+        tous les processus, pas seulement celle des tensors torch.
 
         Returns:
             Tuple (utilisée_gb, totale_gb, pourcentage)
@@ -370,11 +375,17 @@ class TranscriptionService:
         if not _HAS_TORCH or not torch.cuda.is_available():
             return (0.0, 0.0, 0.0)
 
-        allocated = torch.cuda.memory_allocated() / 1024**3
-        total = torch.cuda.get_device_properties(0).total_memory / 1024**3
-        percentage = (allocated / total * 100) if total > 0 else 0.0
+        try:
+            free_bytes, total_bytes = torch.cuda.mem_get_info(0)
+        except Exception:
+            return (0.0, 0.0, 0.0)
 
-        return (allocated, total, percentage)
+        used_bytes = total_bytes - free_bytes
+        used_gb = used_bytes / 1024**3
+        total_gb = total_bytes / 1024**3
+        percentage = (used_bytes / total_bytes * 100) if total_bytes > 0 else 0.0
+
+        return (used_gb, total_gb, percentage)
 
 
 # Test standalone

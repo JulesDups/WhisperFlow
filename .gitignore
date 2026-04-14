@@ -97,3 +97,6 @@ user_settings.json
 
 # Session/conversation files
 CONVERSATION_SUMMARY.md
+
+# Notes vocales (données personnelles)
+notes/

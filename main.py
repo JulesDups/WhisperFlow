@@ -110,8 +110,13 @@ def main():
     app.setApplicationName(app_config.APP_NAME)
     app.setApplicationVersion(app_config.APP_VERSION)
 
+    # Charge les fonts Hegoatek bundlées (Syne, DM Mono) — doit être après QApplication
+    from src.ui import theme as _theme
+
+    display_family, _ = _theme.load_fonts()
+
     # Police par défaut
-    font = QFont("Segoe UI", 10)
+    font = QFont(display_family, 10)
     app.setFont(font)
 
     # Affiche les infos GPU

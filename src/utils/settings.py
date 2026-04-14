@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from ..config import OutputMode, WindowMode, app_config, hotkey_config
+from ..config import OutputMode, RecordingMode, WindowMode, app_config, hotkey_config
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,16 @@ class UserSettings:
     window_mode: str = WindowMode.FLOATING
     window_position_x: int = -1  # -1 = centré
     window_position_y: int = -1
+
+    # Mode d'enregistrement
+    recording_mode: str = RecordingMode.PUSH_TO_TALK
+
+    # Source d'entrée (mic ou url) — persistée entre sessions
+    source_mode: str = "mic"  # "mic" ou "url"
+
+    # Taille de la fenêtre (en mode resizable)
+    window_width: int = 480
+    window_height: int = 580
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserSettings:
@@ -65,6 +75,28 @@ class UserSettings:
         window_x = int(data.get("window_position_x", -1))
         window_y = int(data.get("window_position_y", -1))
 
+        # Mode d'enregistrement
+        recording_mode = str(data.get("recording_mode", RecordingMode.PUSH_TO_TALK))[:20]
+        try:
+            recording_mode = RecordingMode(recording_mode)
+        except ValueError:
+            recording_mode = RecordingMode.PUSH_TO_TALK
+
+        # Source mode (mic / url)
+        source_mode = str(data.get("source_mode", "mic"))[:10]
+        if source_mode not in ("mic", "url"):
+            source_mode = "mic"
+
+        # Window dimensions
+        try:
+            window_width = max(420, min(2000, int(data.get("window_width", 480))))
+        except (TypeError, ValueError):
+            window_width = 480
+        try:
+            window_height = max(480, min(2000, int(data.get("window_height", 580))))
+        except (TypeError, ValueError):
+            window_height = 580
+
         return cls(
             push_to_talk_key=ptt_key,
             output_mode=output_mode,
@@ -74,6 +106,10 @@ class UserSettings:
             window_mode=window_mode,
             window_position_x=window_x,
             window_position_y=window_y,
+            recording_mode=recording_mode,
+            source_mode=source_mode,
+            window_width=window_width,
+            window_height=window_height,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -286,3 +322,42 @@ def get_history_enabled() -> bool:
 def set_history_enabled(enabled: bool) -> None:
     """Active/désactive l'historique"""
     settings_manager.set("history_enabled", enabled)
+
+
+def get_recording_mode() -> str:
+    """Retourne le mode d'enregistrement ('push_to_talk' ou 'toggle')"""
+    return settings_manager.get("recording_mode", RecordingMode.PUSH_TO_TALK)
+
+
+def set_recording_mode(mode: str) -> None:
+    """Définit le mode d'enregistrement"""
+    try:
+        RecordingMode(mode)
+        settings_manager.set("recording_mode", mode)
+    except ValueError:
+        pass
+
+
+def get_source_mode() -> str:
+    """Retourne le mode source ('mic' ou 'url')"""
+    return settings_manager.get("source_mode", "mic")
+
+
+def set_source_mode(mode: str) -> None:
+    """Définit le mode source"""
+    if mode in ("mic", "url"):
+        settings_manager.set("source_mode", mode)
+
+
+def get_window_size() -> tuple[int, int]:
+    """Retourne (width, height) sauvegardés."""
+    return (
+        settings_manager.get("window_width", 480),
+        settings_manager.get("window_height", 580),
+    )
+
+
+def set_window_size(width: int, height: int) -> None:
+    """Sauvegarde la taille de la fenêtre."""
+    settings_manager.set("window_width", int(width), save=False)
+    settings_manager.set("window_height", int(height))

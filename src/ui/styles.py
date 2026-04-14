@@ -1,284 +1,498 @@
 """
-WhisperFlow Desktop - Styles UI
-Définition des styles CSS pour PyQt6
-Style moderne inspiré macOS/Catppuccin
+WhisperFlow UI — QSS stylesheet (Hegoatek Design System, light mode).
+
+Tous les tokens viennent de `theme.py`. Aucun hex codé en dur ici : si tu
+dois changer une couleur, modifie la palette dans theme.py.
+
+Architecture QSS :
+- Sélecteurs par `objectName` (`#centralFrame`, `#sectionHeader`, …) pour
+  cibler précisément les widgets instanciés par `widgets/`.
+- Sélecteurs par `property` dynamique (`[state="recording"]`) pour les états
+  qui changent à l'exécution.
+- QSS ne supporte pas `box-shadow`, `@keyframes`, `backdrop-filter` : ombres
+  via `QGraphicsDropShadowEffect`, pulses via `QPropertyAnimation`.
+
+Typographie : DM Sans (display) + DM Mono (metadata/labels). Poids bumpés
+sur toutes les zones de lecture pour garantir la lisibilité.
 """
 
-from ..config import ui_config
+from __future__ import annotations
+
+from . import theme
 
 
 def get_main_stylesheet() -> str:
-    """Retourne la feuille de style principale"""
+    """QSS global de l'application, assemblée à partir des tokens theme."""
+    display = theme.display_family()
+    mono = theme.mono_family()
+
     return f"""
-    /* ============================================
-       WhisperFlow - Main Stylesheet
-       ============================================ */
-    
-    /* Widget principal */
+    /* ============================================================
+       WhisperFlow — Hegoatek light mode
+       ============================================================ */
+
+    /* Defaults */
     QWidget {{
-        background-color: {ui_config.COLOR_BACKGROUND};
-        color: {ui_config.COLOR_TEXT};
-        font-family: "Segoe UI", "SF Pro Display", Arial, sans-serif;
-        font-size: 13px;
+        background-color: transparent;
+        color: {theme.TEXT};
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
     }}
-    
-    /* Fenêtre principale */
+
     QMainWindow {{
         background-color: transparent;
     }}
-    
-    /* Frame central avec coins arrondis */
+
+    /* Central frame (hosts the rounded card + drop shadow) */
     #centralFrame {{
-        background-color: {ui_config.COLOR_BACKGROUND};
-        border-radius: {ui_config.BORDER_RADIUS}px;
-        border: 1px solid {ui_config.COLOR_SURFACE};
+        background-color: {theme.BG};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_XL}px;
     }}
-    
-    /* Labels */
-    QLabel {{
-        color: {ui_config.COLOR_TEXT};
-        background-color: transparent;
-        padding: 2px;
-    }}
-    
-    QLabel#titleLabel {{
-        font-size: 18px;
-        font-weight: bold;
-        color: {ui_config.COLOR_ACCENT};
-    }}
-    
-    QLabel#statusLabel {{
-        font-size: 14px;
-        color: {ui_config.COLOR_TEXT_DIM};
-        padding: 8px;
-    }}
-    
-    QLabel#transcriptionLabel {{
-        font-size: 14px;
-        color: {ui_config.COLOR_TEXT};
-        background-color: {ui_config.COLOR_SURFACE};
-        border-radius: 8px;
-        padding: 12px;
-        min-height: 60px;
-    }}
-    
-    QLabel#hotkeyLabel {{
-        font-size: 11px;
-        color: {ui_config.COLOR_TEXT_DIM};
-    }}
-    
-    /* Indicateur d'état */
-    #statusIndicator {{
-        background-color: {ui_config.COLOR_TEXT_DIM};
-        border-radius: 6px;
-        min-width: 12px;
-        min-height: 12px;
-        max-width: 12px;
-        max-height: 12px;
-    }}
-    
-    #statusIndicator[state="ready"] {{
-        background-color: {ui_config.COLOR_SUCCESS};
-    }}
-    
-    #statusIndicator[state="recording"] {{
-        background-color: {ui_config.COLOR_RECORDING};
-    }}
-    
-    #statusIndicator[state="processing"] {{
-        background-color: {ui_config.COLOR_PROCESSING};
-    }}
-    
-    #statusIndicator[state="loading"] {{
-        background-color: {ui_config.COLOR_ACCENT};
-    }}
-    
-    /* Barre de progression audio */
-    QProgressBar {{
-        background-color: {ui_config.COLOR_SURFACE};
-        border-radius: 4px;
-        height: 8px;
-        text-align: center;
-    }}
-    
-    QProgressBar::chunk {{
-        background-color: {ui_config.COLOR_ACCENT};
-        border-radius: 4px;
-    }}
-    
-    QProgressBar[state="recording"]::chunk {{
-        background-color: {ui_config.COLOR_RECORDING};
-    }}
-    
-    /* Indicateur VRAM */
-    #vramIndicator {{
-        background-color: transparent;
-    }}
-    
-    #vramIcon {{
-        font-size: 12px;
-        color: {ui_config.COLOR_TEXT_DIM};
-    }}
-    
-    #vramText {{
-        font-size: 10px;
-        color: {ui_config.COLOR_TEXT_DIM};
-    }}
-    
-    #vramBar {{
-        background-color: {ui_config.COLOR_SURFACE};
-        border-radius: 3px;
-        height: 6px;
-    }}
-    
-    #vramBar::chunk {{
-        background-color: {ui_config.COLOR_SUCCESS};
-        border-radius: 3px;
-    }}
-    
-    #vramBar[level="warning"]::chunk {{
-        background-color: #FAB387;
-    }}
-    
-    #vramBar[level="critical"]::chunk {{
-        background-color: {ui_config.COLOR_RECORDING};
-    }}
-    
-    /* Boutons */
-    QPushButton {{
-        background-color: {ui_config.COLOR_SURFACE};
-        color: {ui_config.COLOR_TEXT};
-        border: none;
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 500;
-    }}
-    
-    QPushButton:hover {{
-        background-color: {ui_config.COLOR_ACCENT};
-        color: {ui_config.COLOR_BACKGROUND};
-    }}
-    
-    QPushButton:pressed {{
-        background-color: {ui_config.COLOR_PROCESSING};
-    }}
-    
-    QPushButton#closeButton {{
-        background-color: transparent;
-        color: {ui_config.COLOR_TEXT_DIM};
-        font-size: 16px;
-        font-weight: bold;
-        border-radius: 12px;
-        min-width: 24px;
-        max-width: 24px;
-        min-height: 24px;
-        max-height: 24px;
-        padding: 0px;
-    }}
-    
-    QPushButton#closeButton:hover {{
-        background-color: {ui_config.COLOR_RECORDING};
-        color: white;
-    }}
-    
-    QPushButton#copyButton {{
-        background-color: {ui_config.COLOR_SUCCESS};
-        color: {ui_config.COLOR_BACKGROUND};
-    }}
-    
-    QPushButton#copyButton:hover {{
-        background-color: #b5eeac;
-    }}
-    
-    QPushButton#configKeyButton {{
-        background-color: transparent;
-        color: {ui_config.COLOR_TEXT_DIM};
-        font-size: 12px;
-        border-radius: 6px;
-        min-width: 28px;
-        max-width: 28px;
-        min-height: 28px;
-        max-height: 28px;
-        padding: 0px;
-    }}
-    
-    QPushButton#configKeyButton:hover {{
-        background-color: {ui_config.COLOR_SURFACE};
-        color: {ui_config.COLOR_ACCENT};
-    }}
-    
-    QPushButton#formatButton {{
-        background-color: {ui_config.COLOR_SURFACE};
-        color: {ui_config.COLOR_TEXT};
-        font-size: 12px;
-        border-radius: 8px;
-        padding: 6px 12px;
-    }}
-    
-    QPushButton#formatButton:hover {{
-        background-color: {ui_config.COLOR_ACCENT};
-        color: {ui_config.COLOR_BACKGROUND};
-    }}
-    
-    QPushButton#formatButton:checked {{
-        background-color: {ui_config.COLOR_SUCCESS};
-        color: {ui_config.COLOR_BACKGROUND};
-    }}
-    
-    QPushButton#windowModeButton {{
-        background-color: {ui_config.COLOR_SURFACE};
-        color: {ui_config.COLOR_TEXT};
-        font-size: 12px;
-        border-radius: 8px;
-        padding: 6px 12px;
-    }}
-    
-    QPushButton#windowModeButton:hover {{
-        background-color: {ui_config.COLOR_ACCENT};
-        color: {ui_config.COLOR_BACKGROUND};
-    }}
-    
-    /* Barre de titre personnalisée */
+
+    /* Title bar */
     #titleBar {{
         background-color: transparent;
-        border-top-left-radius: {ui_config.BORDER_RADIUS}px;
-        border-top-right-radius: {ui_config.BORDER_RADIUS}px;
+        border-top-left-radius: {theme.RADIUS_XL}px;
+        border-top-right-radius: {theme.RADIUS_XL}px;
     }}
-    
-    /* Zone de contenu */
+
+    #brandEyebrow {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        color: {theme.GOLD};
+    }}
+
+    #brandName {{
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 20px;
+        font-weight: 800;
+        color: {theme.TEXT};
+        letter-spacing: -0.3px;
+    }}
+
+    #brandVersion {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 400;
+        color: {theme.TEXT_MUTED};
+    }}
+
+    /* Content area */
     #contentArea {{
         background-color: transparent;
-        padding: 16px;
     }}
-    
-    /* Tooltip */
-    QToolTip {{
-        background-color: {ui_config.COLOR_SURFACE};
-        color: {ui_config.COLOR_TEXT};
-        border: 1px solid {ui_config.COLOR_TEXT_DIM};
+
+    /* ============================================================
+       Section headers (eyebrow labels)
+       ============================================================ */
+
+    #sectionHeader, #eyebrow {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    /* ============================================================
+       Status bar
+       ============================================================ */
+
+    #statusBar {{
+        background-color: transparent;
+    }}
+
+    #statusBarLabel {{
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: {theme.TEXT};
+        background-color: transparent;
+    }}
+
+    #statusBarLabel[state="error"] {{
+        color: {theme.DANGER};
+    }}
+
+    #statusBarLabel[state="recording"] {{
+        color: {theme.RUST};
+    }}
+
+    /* ============================================================
+       Level meter
+       ============================================================ */
+
+    #levelMeter {{
+        background-color: transparent;
+    }}
+
+    #levelMeterDb {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    /* ============================================================
+       Metric cards (GPU, MODEL, SESSION)
+       ============================================================ */
+
+    #metricCard {{
+        background-color: {theme.BG_ELEVATED};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_MD}px;
+    }}
+
+    #metricValue {{
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 19px;
+        font-weight: 800;
+        color: {theme.TEXT};
+        background-color: transparent;
+        letter-spacing: -0.2px;
+    }}
+
+    #metricHint {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    /* GpuGauge specific */
+    #gpuGauge {{
+        background-color: transparent;
+    }}
+
+    /* ============================================================
+       Source toggle (MIC / URL segmented pill)
+       ============================================================ */
+
+    #sourceToggle {{
+        background-color: transparent;
+    }}
+
+    QPushButton#sourceToggleBtn {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT_DIM};
+        border: 1px solid {theme.BORDER};
+        padding: 10px 16px;
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }}
+
+    QPushButton#sourceToggleBtn[segment="left"] {{
+        border-top-left-radius: {theme.RADIUS_MD}px;
+        border-bottom-left-radius: {theme.RADIUS_MD}px;
+        border-right: none;
+    }}
+
+    QPushButton#sourceToggleBtn[segment="right"] {{
+        border-top-right-radius: {theme.RADIUS_MD}px;
+        border-bottom-right-radius: {theme.RADIUS_MD}px;
+    }}
+
+    QPushButton#sourceToggleBtn:hover {{
+        color: {theme.TEXT};
+        background-color: {theme.BG_HOVER};
+    }}
+
+    QPushButton#sourceToggleBtn:checked {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+        border-color: {theme.INK};
+    }}
+
+    /* ============================================================
+       URL panel
+       ============================================================ */
+
+    #urlPanel {{
+        background-color: transparent;
+    }}
+
+    QLineEdit#urlInput {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_MD}px;
+        padding: 10px 14px;
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 12px;
+        font-weight: 500;
+        selection-background-color: {theme.ACCENT_STRONG};
+        selection-color: {theme.INK};
+    }}
+
+    QLineEdit#urlInput:focus {{
+        border: 1px solid {theme.BORDER_GOLD};
+        background-color: {theme.BG_ELEVATED};
+    }}
+
+    QLineEdit#urlInput::placeholder {{
+        color: {theme.TEXT_MUTED};
+    }}
+
+    /* Primary action button (INK on CREAM → high-contrast dark button) */
+    QPushButton#urlSubmitBtn {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+        border: none;
+        border-radius: {theme.RADIUS_MD}px;
+        padding: 10px 18px;
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }}
+
+    QPushButton#urlSubmitBtn:hover {{
+        background-color: {theme.GOLD};
+        color: {theme.INK};
+    }}
+
+    QPushButton#urlSubmitBtn:disabled {{
+        background-color: {theme.BG_HOVER};
+        color: {theme.TEXT_MUTED};
+    }}
+
+    QPushButton#urlSubmitBtn[busy="true"] {{
+        background-color: {theme.RUST};
+        color: {theme.CREAM};
+    }}
+
+    QPushButton#urlSubmitBtn[busy="true"]:hover {{
+        background-color: {theme.DANGER};
+    }}
+
+    #urlMeta {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+        padding: 2px 0;
+    }}
+
+    QProgressBar#urlProgress {{
+        background-color: {theme.BG_HOVER};
+        border: none;
+        border-radius: 3px;
+    }}
+
+    QProgressBar#urlProgress::chunk {{
+        background-color: {theme.GOLD};
+        border-radius: 3px;
+    }}
+
+    #urlProgressLabel {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    /* ============================================================
+       Transcript view (3-states: empty / result / error)
+       ============================================================ */
+
+    #transcriptView {{
+        background-color: transparent;
+    }}
+
+    #transcriptBody {{
+        background-color: {theme.BG_ELEVATED};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_LG}px;
+    }}
+
+    QTextEdit#transcriptText {{
+        background-color: transparent;
+        border: none;
+        color: {theme.TEXT};
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        padding: 0;
+        selection-background-color: {theme.ACCENT_STRONG};
+        selection-color: {theme.INK};
+    }}
+
+    QTextEdit#transcriptText QScrollBar:vertical {{
+        background: transparent;
+        width: 8px;
+        margin: 0;
+    }}
+
+    QTextEdit#transcriptText QScrollBar::handle:vertical {{
+        background: {theme.BORDER_STRONG};
         border-radius: 4px;
-        padding: 4px 8px;
+        min-height: 24px;
+    }}
+
+    QTextEdit#transcriptText QScrollBar::handle:vertical:hover {{
+        background: {theme.TEXT_DIM};
+    }}
+
+    QTextEdit#transcriptText QScrollBar::add-line:vertical,
+    QTextEdit#transcriptText QScrollBar::sub-line:vertical {{
+        height: 0;
+    }}
+
+    #langBadge {{
+        background-color: {theme.ACCENT_SOFT};
+        color: {theme.INK};
+        border: 1px solid {theme.BORDER_GOLD};
+        border-radius: 10px;
+        padding: 3px 12px;
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }}
+
+    #emptyTitle {{
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: {theme.TEXT};
+        background-color: transparent;
+        letter-spacing: -0.2px;
+    }}
+
+    #emptyHint {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    #errorTitle {{
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: {theme.DANGER};
+        background-color: transparent;
+    }}
+
+    #errorDetail {{
+        font-family: "{mono}", "Consolas", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: {theme.TEXT_DIM};
+        background-color: transparent;
+    }}
+
+    QPushButton#retryBtn {{
+        background-color: {theme.DANGER_BG};
+        color: {theme.DANGER};
+        border: 1px solid {theme.DANGER_BORDER};
+        border-radius: {theme.RADIUS_MD}px;
+        padding: 10px 22px;
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+    }}
+
+    QPushButton#retryBtn:hover {{
+        background-color: {theme.DANGER};
+        color: {theme.CREAM};
+    }}
+
+    /* ============================================================
+       Menu button (≡)
+       ============================================================ */
+
+    QPushButton#menuButton {{
+        background-color: {theme.BG_ELEVATED};
+        color: {theme.TEXT_DIM};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_SM}px;
+        font-size: 18px;
+        font-weight: 700;
+        padding: 0;
+    }}
+
+    QPushButton#menuButton:hover {{
+        color: {theme.INK};
+        border-color: {theme.BORDER_GOLD};
+        background-color: {theme.ACCENT_SOFT};
+    }}
+
+    QPushButton#menuButton:pressed {{
+        background-color: {theme.ACCENT_STRONG};
+    }}
+
+    QMenu#appMenu {{
+        background-color: {theme.BG_ELEVATED};
+        border: 1px solid {theme.BORDER_STRONG};
+        border-radius: {theme.RADIUS_MD}px;
+        padding: 6px;
+        color: {theme.TEXT};
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+    }}
+
+    QMenu#appMenu::item {{
+        padding: 9px 20px;
+        border-radius: {theme.RADIUS_SM}px;
+        color: {theme.TEXT};
+    }}
+
+    QMenu#appMenu::item:selected {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+    }}
+
+    QMenu#appMenu::separator {{
+        height: 1px;
+        background: {theme.BORDER};
+        margin: 4px 2px;
+    }}
+
+    /* ============================================================
+       Close button (×)
+       ============================================================ */
+
+    QPushButton#closeButton {{
+        background-color: transparent;
+        color: {theme.TEXT_MUTED};
+        border: none;
+        border-radius: {theme.RADIUS_SM}px;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 0;
+    }}
+
+    QPushButton#closeButton:hover {{
+        background-color: {theme.DANGER_BG};
+        color: {theme.DANGER};
+    }}
+
+    /* ============================================================
+       Tooltip
+       ============================================================ */
+
+    QToolTip {{
+        background-color: {theme.INK};
+        color: {theme.CREAM};
+        border: 1px solid {theme.INK};
+        border-radius: {theme.RADIUS_SM}px;
+        padding: 6px 12px;
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
     }}
     """
-
-
-def get_recording_pulse_style() -> str:
-    """Style pour l'animation de pulsation pendant l'enregistrement"""
-    return """
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    """
-
-
-def get_state_colors() -> dict:
-    """Retourne les couleurs par état"""
-    return {
-        "ready": ui_config.COLOR_SUCCESS,
-        "recording": ui_config.COLOR_RECORDING,
-        "processing": ui_config.COLOR_PROCESSING,
-        "loading": ui_config.COLOR_ACCENT,
-        "error": "#F38BA8",
-    }
