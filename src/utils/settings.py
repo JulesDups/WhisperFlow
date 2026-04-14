@@ -43,7 +43,7 @@ class UserSettings:
 
     # Taille de la fenêtre (en mode resizable)
     window_width: int = 480
-    window_height: int = 680
+    window_height: int = 780
 
     # URL feature — langue cible et format d'export des notes
     url_language: str = "auto"  # "auto", "fr", "en"
@@ -97,9 +97,9 @@ class UserSettings:
         except (TypeError, ValueError):
             window_width = 480
         try:
-            window_height = max(640, min(2000, int(data.get("window_height", 680))))
+            window_height = max(720, min(2000, int(data.get("window_height", 780))))
         except (TypeError, ValueError):
-            window_height = 680
+            window_height = 780
 
         # URL language — whitelisted
         url_language = str(data.get("url_language", "auto"))[:10]

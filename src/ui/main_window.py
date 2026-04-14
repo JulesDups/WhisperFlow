@@ -17,6 +17,8 @@ Architecture :
 from __future__ import annotations
 
 import logging
+import subprocess
+from pathlib import Path
 
 import numpy as np
 from PyQt6.QtCore import QPoint, Qt, QTimer, pyqtSignal
@@ -173,6 +175,7 @@ class MainWindow(QMainWindow):
         self._source_mode = SourceMode(get_source_mode())
         self._history_enabled = get_history_enabled()
         self._last_audio_duration_s: float = 0.0
+        self._last_notes_path: Path | None = None
 
         # Services
         self.transcription_service = TranscriptionService()
@@ -278,7 +281,7 @@ class MainWindow(QMainWindow):
         content.setObjectName("contentArea")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(theme.SPACE_5, theme.SPACE_2, theme.SPACE_5, theme.SPACE_3)
-        content_layout.setSpacing(theme.SPACE_4)
+        content_layout.setSpacing(theme.SPACE_3)
         main_layout.addWidget(content, 1)
 
         # --- Status bar ---
@@ -306,21 +309,30 @@ class MainWindow(QMainWindow):
         self.url_panel.set_visible_mode(self._source_mode == SourceMode.URL)
         content_layout.addWidget(self.url_panel)
 
-        # --- Transcript view ---
+        # --- Transcript view (stretch=10 pour absorber l'espace restant) ---
         self.transcript_view = TranscriptView()
         self.transcript_view.retry_requested.connect(self._on_retry_requested)
-        content_layout.addWidget(self.transcript_view, 1)
+        content_layout.addWidget(self.transcript_view, 10)
 
         # --- Bottom row : copy button + stats strip ---
         self.stats_strip = StatsStrip()
         self.stats_strip.set_model_info(model_config.MODEL_ID, "auto")
         content_layout.addWidget(self.stats_strip)
 
-        # Copy row (fallback si type_text échoue + permet select-and-copy)
+        # Actions row : Open folder (URL only) + Copy (mic fallback & URL)
         actions_row = QHBoxLayout()
         actions_row.setContentsMargins(0, 0, 0, 0)
         actions_row.setSpacing(theme.SPACE_2)
         actions_row.addStretch()
+
+        self.open_folder_btn = QPushButton("Open folder")
+        self.open_folder_btn.setObjectName("ghostBtn")
+        self.open_folder_btn.setFixedHeight(34)
+        self.open_folder_btn.setEnabled(False)
+        self.open_folder_btn.setToolTip("Reveal last transcript in File Explorer")
+        self.open_folder_btn.clicked.connect(self._open_last_notes_folder)
+        actions_row.addWidget(self.open_folder_btn)
+
         self.copy_btn = QPushButton("Copy")
         self.copy_btn.setObjectName("urlSubmitBtn")
         self.copy_btn.setFixedWidth(100)
@@ -609,10 +621,24 @@ class MainWindow(QMainWindow):
             voice_notes.add_note(text)
 
     def _on_url_notes_saved(self, path: str) -> None:
-        from pathlib import Path
+        notes_path = Path(path)
+        self._last_notes_path = notes_path
+        self.open_folder_btn.setEnabled(True)
+        self.status_bar.show_transient(f"Notes saved · {notes_path.name}", 3200)
 
-        filename = Path(path).name
-        self.status_bar.show_transient(f"Notes saved · {filename}", 3200)
+    def _open_last_notes_folder(self) -> None:
+        """Ouvre l'explorateur Windows et sélectionne le dernier fichier exporté."""
+        if self._last_notes_path is None or not self._last_notes_path.exists():
+            return
+        # /select, demande à l'explorateur d'ouvrir le dossier parent et
+        # de mettre le fichier en surbrillance. Windows only.
+        try:
+            subprocess.Popen(
+                ["explorer", f"/select,{self._last_notes_path}"],
+                shell=False,
+            )
+        except OSError as e:
+            logger.warning("Impossible d'ouvrir l'explorateur : %s", e)
 
     def _on_url_error(self, message: str) -> None:
         self.transcript_view.set_error(message)

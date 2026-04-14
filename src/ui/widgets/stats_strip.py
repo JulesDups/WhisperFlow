@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
 from .. import theme
 from .gpu_gauge import GpuGauge
@@ -53,10 +53,12 @@ class _MetricCard(QFrame):
     def __init__(self, title: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("metricCard")
+        # Fixed vertical : la carte ne veut que la hauteur de son contenu.
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(theme.SPACE_3, theme.SPACE_3, theme.SPACE_3, theme.SPACE_3)
-        root.setSpacing(theme.SPACE_1)
+        root.setContentsMargins(theme.SPACE_3, theme.SPACE_2, theme.SPACE_3, theme.SPACE_2)
+        root.setSpacing(2)
 
         self._eyebrow = QLabel(title)
         self._eyebrow.setObjectName("eyebrow")
@@ -73,8 +75,6 @@ class _MetricCard(QFrame):
         self._hint2 = QLabel("")
         self._hint2.setObjectName("metricHint")
         root.addWidget(self._hint2)
-
-        root.addStretch()
 
     def set_value(self, value: str) -> None:
         self._value.setText(value)
@@ -171,10 +171,10 @@ class _GpuCardWrapper(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("metricCard")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(theme.SPACE_3, theme.SPACE_3, theme.SPACE_3, theme.SPACE_3)
+        layout.setContentsMargins(theme.SPACE_3, theme.SPACE_2, theme.SPACE_3, theme.SPACE_2)
         layout.setSpacing(0)
 
         self.gauge = GpuGauge(self)
         layout.addWidget(self.gauge, 0, Qt.AlignmentFlag.AlignTop)
-        layout.addStretch()

@@ -311,6 +311,31 @@ def get_main_stylesheet() -> str:
         color: {theme.TEXT_MUTED};
     }}
 
+    /* Ghost/secondary button (used for "Open folder" next to Copy) */
+    QPushButton#ghostBtn {{
+        background-color: transparent;
+        color: {theme.TEXT_DIM};
+        border: 1px solid {theme.BORDER};
+        border-radius: {theme.RADIUS_MD}px;
+        padding: 8px 16px;
+        font-family: "{display}", "Segoe UI", sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }}
+
+    QPushButton#ghostBtn:hover {{
+        color: {theme.INK};
+        border-color: {theme.BORDER_GOLD};
+        background-color: {theme.ACCENT_SOFT};
+    }}
+
+    QPushButton#ghostBtn:disabled {{
+        color: {theme.TEXT_MUTED};
+        border-color: {theme.BORDER};
+        background-color: transparent;
+    }}
+
     /* Primary action button (INK on CREAM → high-contrast dark button) */
     QPushButton#urlSubmitBtn {{
         background-color: {theme.INK};

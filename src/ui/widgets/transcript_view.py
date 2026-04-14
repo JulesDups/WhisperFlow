@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QStackedLayout,
     QTextEdit,
     QVBoxLayout,
@@ -79,6 +80,8 @@ class TranscriptView(QWidget):
         # Body : stacked layout for the 3 states
         self._body = QWidget()
         self._body.setObjectName("transcriptBody")
+        self._body.setMinimumHeight(200)
+        self._body.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._stack = QStackedLayout(self._body)
         self._stack.setContentsMargins(theme.SPACE_4, theme.SPACE_4, theme.SPACE_4, theme.SPACE_4)
         root.addWidget(self._body, 1)
