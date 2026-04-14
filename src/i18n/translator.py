@@ -69,13 +69,13 @@ def set_ui_language(lang: str) -> None:
             pass
 
 
-def t(key: str, **kwargs: object) -> str:
+def t(translation_key: str, **kwargs: object) -> str:
     """Translate a key, with optional format parameters."""
     lang_dict = _TRANSLATIONS.get(_CURRENT_LANG, {})
-    text = lang_dict.get(key)
+    text = lang_dict.get(translation_key)
     if text is None:
         # Fall back to English
-        text = _TRANSLATIONS.get("en", {}).get(key, key)
+        text = _TRANSLATIONS.get("en", {}).get(translation_key, translation_key)
     if kwargs:
         try:
             text = text.format(**kwargs)
